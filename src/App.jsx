@@ -21,7 +21,7 @@ export default function App() {
   const [uploading, setUploading] = useState(false);
 
   // YOUR OFFICIAL LINKS & HANDLES
-  const WHATSAPP_NUMBER = '2348000000000'; // Replace with your WhatsApp number
+  const WHATSAPP_NUMBER = '2250100130109'; // Replace with your WhatsApp number
   const FACEBOOK_URL = 'https://facebook.com/your-profile'; // Replace with your Facebook link
   const TIKTOK_URL = 'https://tiktok.com/@your-profile'; // Replace with your TikTok link
   
