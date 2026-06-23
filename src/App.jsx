@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from './utils/supabaseClient';
-import { ShoppingCart, ShoppingBag, ShieldCheck, Smartphone, Star, Heart, Trash2, Video } from 'lucide-react';
+import { ShoppingCart, ShoppingBag, ShieldCheck, Smartphone, Star, Heart, Trash2, Video, Search, X } from 'lucide-react';
 
 export default function App() {
   const [view, setView] = useState('client'); 
@@ -12,6 +12,9 @@ export default function App() {
   const [cart, setCart] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   
+  // NEW SEARCH ENGINE STATE
+  const [searchTerm, setSearchTerm] = useState('');
+
   // Form states
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
@@ -172,6 +175,14 @@ export default function App() {
     }
   };
 
+  // REALTIME SEARCH FILTER LOGIC
+  const filteredProducts = products.filter(product => {
+    const pName = product.name ? product.name.toLowerCase() : '';
+    const pDesc = product.description ? product.description.toLowerCase() : '';
+    const query = searchTerm.toLowerCase();
+    return pName.includes(query) || pDesc.includes(query);
+  });
+
   return (
     <div className="min-h-screen bg-[#f5f5f7] text-gray-900 font-sans antialiased">
       
@@ -180,7 +191,7 @@ export default function App() {
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           
           {/* Logo */}
-          <div className="flex items-center space-x-2 cursor-pointer" onClick={() => setView('client')}>
+          <div className="flex items-center space-x-2 cursor-pointer" onClick={() => { setView('client'); setSearchTerm(''); }}>
             <span className="bg-[#f68b1e] text-white p-2 rounded-xl shadow-md">
               <ShoppingBag className="w-5 h-5" />
             </span>
@@ -189,51 +200,48 @@ export default function App() {
             </span>
           </div>
           
-          {/* Action Area: Social Handles + Navigation */}
-          <div className="flex items-center space-x-4">
+          {/* Action Area */}
+          <div className="flex items-center space-x-3 sm:space-x-4">
             
-            {/* SOCIAL ICONS GROUP */}
-            <div className="hidden sm:flex items-center space-x-2 border-r border-gray-200 pr-4">
-              {/* WhatsApp Icon Button */}
+            {/* FIXED SOCIAL ICONS GROUP (Now completely visible on mobile) */}
+            <div className="flex items-center space-x-1.5 sm:space-x-2 border-r border-gray-200 pr-3 sm:pr-4">
               <a 
                 href={`https://wa.me/${WHATSAPP_NUMBER}`}
                 target="_blank" 
                 rel="noreferrer"
-                className="p-2 rounded-lg bg-green-50 hover:bg-green-100 text-green-600 transition-colors flex items-center justify-center"
+                className="p-1.5 sm:p-2 rounded-lg bg-green-50 hover:bg-green-100 text-green-600 transition-colors flex items-center justify-center"
                 title="Chat on WhatsApp"
               >
-                <Smartphone className="w-4 h-4" />
+                <Smartphone className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </a>
 
-              {/* Facebook Icon Button */}
               <a 
                 href={FACEBOOK_URL} 
                 target="_blank" 
                 rel="noreferrer"
-                className="p-2 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 font-bold text-xs transition-colors w-8 h-8 flex items-center justify-center"
+                className="p-1.5 sm:p-2 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 font-bold text-xs transition-colors w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center"
                 title="Follow on Facebook"
               >
                 f
               </a>
 
-              {/* TikTok Icon Button */}
               <a 
                 href={TIKTOK_URL} 
                 target="_blank" 
                 rel="noreferrer"
-                className="p-2 rounded-lg bg-zinc-50 hover:bg-zinc-100 text-zinc-900 transition-colors flex items-center justify-center"
+                className="p-1.5 sm:p-2 rounded-lg bg-zinc-50 hover:bg-zinc-100 text-zinc-900 transition-colors flex items-center justify-center"
                 title="Follow on TikTok"
               >
-                <Video className="w-4 h-4" />
+                <Video className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </a>
             </div>
 
             {/* Admin Portal Toggle */}
             <button 
               onClick={() => setView(view === 'client' ? 'admin' : 'client')} 
-              className="px-3 py-1.5 text-xs rounded-xl font-bold border border-gray-200 hover:bg-gray-50 text-gray-700 flex items-center space-x-1.5"
+              className="px-2.5 py-1.5 text-xs rounded-xl font-bold border border-gray-200 hover:bg-gray-50 text-gray-700 flex items-center space-x-1"
             >
-              <ShieldCheck className="w-4 h-4 text-[#f68b1e]" />
+              <ShieldCheck className="w-3.5 h-3.5 text-[#f68b1e]" />
               <span className="hidden md:inline">{view === 'client' ? 'Admin Portal' : 'Back to Shop'}</span>
             </button>
 
@@ -256,7 +264,8 @@ export default function App() {
       {view === 'client' && (
         <main className="max-w-7xl w-full mx-auto p-4 md:py-8">
           
-          <div className="bg-gradient-to-r from-zinc-950 via-zinc-900 to-amber-950 text-white rounded-2xl p-6 md:p-8 mb-8 border border-zinc-800 flex flex-col md:flex-row justify-between items-center">
+          {/* Hero Banner */}
+          <div className="bg-gradient-to-r from-zinc-950 via-zinc-900 to-amber-950 text-white rounded-2xl p-6 md:p-8 mb-6 border border-zinc-800 flex flex-col md:flex-row justify-between items-center">
             <div>
               <span className="bg-[#f68b1e]/10 text-[#f68b1e] text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full border border-[#f68b1e]/20">
                 ✨ Official Store Experience
@@ -272,13 +281,46 @@ export default function App() {
             </div>
           </div>
 
-          {products.length === 0 ? (
+          {/* SEARCH BOX INTERFACE */}
+          <div className="max-w-md mx-auto mb-8 relative px-1">
+            <div className="relative flex items-center">
+              <Search className="w-4 h-4 text-gray-400 absolute left-3.5 pointer-events-none" />
+              <input 
+                type="text" 
+                placeholder="Search for items, brands, cleansers..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-white text-sm text-black border border-gray-200 pl-10 pr-10 py-2.5 rounded-xl focus:outline-none focus:border-[#f68b1e] focus:ring-1 focus:ring-[#f68b1e] transition-all shadow-xs"
+              />
+              {searchTerm && (
+                <button 
+                  onClick={() => setSearchTerm('')} 
+                  className="absolute right-3 p-1 rounded-full text-gray-400 hover:text-black hover:bg-gray-100 transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+            {searchTerm && (
+              <p className="text-[11px] text-gray-400 mt-1.5 ml-1">
+                Showing results for "<span className="text-zinc-700 font-medium">{searchTerm}</span>" ({filteredProducts.length} items found)
+              </p>
+            )}
+          </div>
+
+          {/* SEARCH RESULTS LAYOUT TARGET */}
+          {filteredProducts.length === 0 ? (
             <div className="bg-white rounded-2xl p-16 text-center border border-gray-100">
-              <p className="text-gray-400 text-sm">No cosmetics products listed yet.</p>
+              <p className="text-gray-400 text-sm">No cosmetics products match your search.</p>
+              {searchTerm && (
+                <button onClick={() => setSearchTerm('')} className="mt-2 text-xs text-[#f68b1e] font-bold hover:underline">
+                  Clear search query
+                </button>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
-              {products.map((p) => {
+              {filteredProducts.map((p) => {
                 const itemQtyInCart = getProductCartQty(p.id);
                 const isOutOfStock = p.quantity !== null ? p.quantity <= 0 : !p.stock_status;
 
