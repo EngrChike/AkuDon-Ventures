@@ -26,7 +26,7 @@ export default function App() {
   // YOUR OFFICIAL LINKS & HANDLES
   const WHATSAPP_NUMBER = '2250100130109'; // Replace with your WhatsApp number
   const FACEBOOK_URL = 'https://facebook.com/your-profile'; // Replace with your Facebook link
-  const TIKTOK_URL = 'https://tiktok.com/@your-profile'; // Replace with your TikTok link
+  const TIKTOK_URL = 'https://tiktok.com/@donchike7'; // Replace with your TikTok link
   
   const ADMIN_SECRET_PASSPHRASE = 'DonChike2026';
 
