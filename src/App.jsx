@@ -51,8 +51,20 @@ export default function App() {
     if (adminPassword === ADMIN_SECRET_PASSPHRASE) {
       setIsAdminAuthenticated(true);
       setAuthError('');
+      setAdminPassword(''); // Clear the password field input after login
     } else {
       setAuthError('Invalid credentials.');
+    }
+  };
+
+  // SECURE NAVIGATION CONTROLLER
+  const handleViewToggle = () => {
+    if (view === 'client') {
+      setView('admin');
+    } else {
+      // Locking the dashboard immediately when returning to the shop view
+      setIsAdminAuthenticated(false);
+      setView('client');
     }
   };
 
@@ -191,7 +203,7 @@ export default function App() {
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           
           {/* Logo */}
-          <div className="flex items-center space-x-2 cursor-pointer" onClick={() => { setView('client'); setSearchTerm(''); }}>
+          <div className="flex items-center space-x-2 cursor-pointer" onClick={() => { setIsAdminAuthenticated(false); setView('client'); setSearchTerm(''); }}>
             <span className="bg-[#f68b1e] text-white p-2 rounded-xl shadow-md">
               <ShoppingBag className="w-5 h-5" />
             </span>
@@ -203,7 +215,7 @@ export default function App() {
           {/* Action Area */}
           <div className="flex items-center space-x-3 sm:space-x-4">
             
-            {/* FIXED SOCIAL ICONS GROUP (Now completely visible on mobile) */}
+            {/* SOCIAL ICONS GROUP */}
             <div className="flex items-center space-x-1.5 sm:space-x-2 border-r border-gray-200 pr-3 sm:pr-4">
               <a 
                 href={`https://wa.me/${WHATSAPP_NUMBER}`}
@@ -236,9 +248,9 @@ export default function App() {
               </a>
             </div>
 
-            {/* Admin Portal Toggle */}
+            {/* Admin Portal Toggle (Now locks down securely when clicked to go back) */}
             <button 
-              onClick={() => setView(view === 'client' ? 'admin' : 'client')} 
+              onClick={handleViewToggle} 
               className="px-2.5 py-1.5 text-xs rounded-xl font-bold border border-gray-200 hover:bg-gray-50 text-gray-700 flex items-center space-x-1"
             >
               <ShieldCheck className="w-3.5 h-3.5 text-[#f68b1e]" />
@@ -403,6 +415,7 @@ export default function App() {
             <div className="max-w-sm mx-auto bg-white rounded-2xl border border-gray-200 p-6 mt-10 shadow-sm">
               <div className="text-center mb-5">
                 <h2 className="text-lg font-bold text-gray-900">Protected Admin System</h2>
+                {authError && <p className="text-red-500 text-xs mt-1">{authError}</p>}
               </div>
               <form onSubmit={handleAdminLogin} className="space-y-4">
                 <input type="password" placeholder="Enter passphrase..." value={adminPassword} onChange={e => setAdminPassword(e.target.value)} className="w-full border p-2.5 rounded-xl text-xs bg-white text-black font-mono" required />
