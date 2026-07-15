@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from './utils/supabaseClient';
-import { ShoppingCart, ShoppingBag, ShieldCheck, Smartphone, Star, Heart, Trash2, Video, Search, X } from 'lucide-react';
+import { ShoppingCart, ShoppingBag, ShieldCheck, Smartphone, Star, Heart, Trash2, Pencil, Video, Search, X } from 'lucide-react';
 
 export default function App() {
   const [view, setView] = useState('client'); 
@@ -15,13 +15,16 @@ export default function App() {
   // NEW SEARCH ENGINE STATE
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Form states
+  // Form states (used for both Add and Edit)
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
   const [quantity, setQuantity] = useState('');
   const [description, setDescription] = useState('');
   const [imageFile, setImageFile] = useState(null);
   const [uploading, setUploading] = useState(false);
+
+  // Edit target tracker
+  const [editingProduct, setEditingProduct] = useState(null);
 
   // YOUR OFFICIAL LINKS & HANDLES
   const WHATSAPP_NUMBER = '2250100130109'; 
@@ -62,6 +65,7 @@ export default function App() {
       setView('admin');
     } else {
       setIsAdminAuthenticated(false);
+      cancelEdit();
       setView('client');
     }
   };
@@ -190,6 +194,25 @@ export default function App() {
     if (!error) setProducts(prev => prev.filter(p => p.id !== id));
   };
 
+  // Populate form with item details to trigger Edit Mode
+  const startEditProduct = (product) => {
+    setEditingProduct(product);
+    setName(product.name);
+    setPrice(product.price);
+    setQuantity(product.quantity);
+    setDescription(product.description || '');
+    setImageFile(null); // Reset input file selection
+  };
+
+  const cancelEdit = () => {
+    setEditingProduct(null);
+    setName('');
+    setPrice('');
+    setQuantity('');
+    setDescription('');
+    setImageFile(null);
+  };
+
   const handleAddProduct = async (e) => {
     e.preventDefault();
     if (!name || !price || !quantity) return;
@@ -202,7 +225,6 @@ export default function App() {
         let fileToUpload = imageFile;
         try {
           fileToUpload = await compressImage(imageFile, 800, 800, 0.75);
-          console.log(`Compressed: Original size ${imageFile.size} -> New size ${fileToUpload.size}`);
         } catch (compressionError) {
           console.warn("Failed to compress image, attempting original upload:", compressionError);
         }
@@ -251,6 +273,65 @@ export default function App() {
     }
   };
 
+  const handleUpdateProduct = async (e) => {
+    e.preventDefault();
+    if (!editingProduct) return;
+    setUploading(true);
+
+    let image_url = editingProduct.image_url;
+
+    try {
+      if (imageFile) {
+        let fileToUpload = imageFile;
+        try {
+          fileToUpload = await compressImage(imageFile, 800, 800, 0.75);
+        } catch (compressionError) {
+          console.warn("Failed to compress image, using original:", compressionError);
+        }
+
+        const cleanName = fileToUpload.name.replace(/[^a-zA-Z0-9.]/g, '_');
+        const fileName = `${Date.now()}_${cleanName}`;
+
+        const { error: upErr } = await supabase.storage
+          .from('product-images')
+          .upload(fileName, fileToUpload, { cacheControl: '3600', upsert: false });
+
+        if (!upErr) {
+          const { data } = supabase.storage.from('product-images').getPublicUrl(fileName);
+          if (data?.publicUrl) image_url = data.publicUrl;
+        } else {
+          throw upErr;
+        }
+      }
+
+      const parsedQty = parseInt(quantity) || 0;
+      const payload = {
+        name: String(name).trim(),
+        description: String(description || '').trim(),
+        price: parseFloat(price),
+        image_url: image_url,
+        quantity: parsedQty,
+        stock_status: parsedQty > 0
+      };
+
+      const { error: updErr } = await supabase
+        .from('products')
+        .update(payload)
+        .eq('id', editingProduct.id);
+
+      if (updErr) throw updErr;
+
+      cancelEdit();
+      await fetchProducts();
+      alert('Product updated successfully!');
+    } catch (err) {
+      console.error(err);
+      alert(`Update Error: ${err.message}`);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   // REALTIME SEARCH FILTER LOGIC
   const filteredProducts = products.filter(product => {
     const pName = product.name ? product.name.toLowerCase() : '';
@@ -267,7 +348,7 @@ export default function App() {
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           
           {/* Logo & Company Name */}
-          <div className="flex items-center space-x-2 cursor-pointer shrink-0" onClick={() => { setIsAdminAuthenticated(false); setView('client'); setSearchTerm(''); }}>
+          <div className="flex items-center space-x-2 cursor-pointer shrink-0" onClick={() => { setIsAdminAuthenticated(false); cancelEdit(); setView('client'); setSearchTerm(''); }}>
             <span className="bg-[#f68b1e] text-white p-2 rounded-xl shadow-md">
               <ShoppingBag className="w-5 h-5" />
             </span>
@@ -492,20 +573,79 @@ export default function App() {
           ) : (
             <div className="grid md:grid-cols-3 gap-6">
               
+              {/* Product Form (Duo Purpose: Add & Edit) */}
               <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm h-fit">
-                <h3 className="font-bold text-xs uppercase tracking-wide text-gray-700 pb-2 border-b mb-4">Add New Product</h3>
-                <form onSubmit={handleAddProduct} className="space-y-3.5">
-                  <input type="text" placeholder="Product Title" value={name} onChange={e => setName(e.target.value)} className="w-full border p-2 text-xs rounded-lg bg-white text-black" required />
+                <div className="flex justify-between items-center pb-2 border-b mb-4">
+                  <h3 className="font-bold text-xs uppercase tracking-wide text-gray-700">
+                    {editingProduct ? 'Update Cosmetics Product' : 'Add New Product'}
+                  </h3>
+                  {editingProduct && (
+                    <button 
+                      onClick={cancelEdit} 
+                      className="text-xs text-red-500 hover:text-red-700 font-bold hover:underline"
+                    >
+                      Cancel Edit
+                    </button>
+                  )}
+                </div>
+                
+                <form onSubmit={editingProduct ? handleUpdateProduct : handleAddProduct} className="space-y-3.5">
+                  <input 
+                    type="text" 
+                    placeholder="Product Title" 
+                    value={name} 
+                    onChange={e => setName(e.target.value)} 
+                    className="w-full border p-2 text-xs rounded-lg bg-white text-black" 
+                    required 
+                  />
                   <div className="grid grid-cols-2 gap-3">
-                    <input type="number" placeholder="Price (CFA)" value={price} onChange={e => setPrice(e.target.value)} className="w-full border p-2 text-xs rounded-lg bg-white text-black" required />
-                    <input type="number" placeholder="Stock Qty" value={quantity} onChange={e => setQuantity(e.target.value)} className="w-full border p-2 text-xs rounded-lg bg-white text-black" required />
+                    <input 
+                      type="number" 
+                      placeholder="Price (CFA)" 
+                      value={price} 
+                      onChange={e => setPrice(e.target.value)} 
+                      className="w-full border p-2 text-xs rounded-lg bg-white text-black" 
+                      required 
+                    />
+                    <input 
+                      type="number" 
+                      placeholder="Stock Qty" 
+                      value={quantity} 
+                      onChange={e => setQuantity(e.target.value)} 
+                      className="w-full border p-2 text-xs rounded-lg bg-white text-black" 
+                      required 
+                    />
                   </div>
-                  <textarea placeholder="Description" value={description} onChange={e => setDescription(e.target.value)} className="w-full border p-2 text-xs rounded-lg h-14 bg-white text-black" />
-                  <input type="file" accept="image/*" onChange={e => setImageFile(e.target.files[0])} className="w-full text-xs text-gray-500" />
-                  <button type="submit" disabled={uploading} className="w-full bg-[#f68b1e] text-white text-xs py-2 rounded-lg font-bold uppercase">{uploading ? 'Publishing...' : 'Publish Product'}</button>
+                  <textarea 
+                    placeholder="Description" 
+                    value={description} 
+                    onChange={e => setDescription(e.target.value)} 
+                    className="w-full border p-2 text-xs rounded-lg h-14 bg-white text-black" 
+                  />
+                  
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-gray-400 block font-bold uppercase">
+                      {editingProduct ? 'Change Product Image (Optional)' : 'Product Image'}
+                    </label>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={e => setImageFile(e.target.files[0])} 
+                      className="w-full text-xs text-gray-500" 
+                    />
+                  </div>
+                  
+                  <button 
+                    type="submit" 
+                    disabled={uploading} 
+                    className="w-full bg-[#f68b1e] text-white text-xs py-2 rounded-lg font-bold uppercase hover:bg-[#e07a16] transition-all"
+                  >
+                    {uploading ? 'Processing...' : editingProduct ? 'Save Updates' : 'Publish Product'}
+                  </button>
                 </form>
               </div>
 
+              {/* Operational Catalog Controller */}
               <div className="md:col-span-2 bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
                 <h3 className="font-bold text-xs uppercase tracking-wide text-gray-700 mb-4 pb-2 border-b">Operational Catalog Controller</h3>
                 <div className="overflow-x-auto">
@@ -515,12 +655,12 @@ export default function App() {
                         <th className="p-2.5">Item Info</th>
                         <th className="p-2.5">Price</th>
                         <th className="p-2.5 text-center">In-Stock Units</th>
-                        <th className="p-2.5 text-center">Action</th>
+                        <th className="p-2.5 text-center">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
                       {products.map((p) => (
-                        <tr key={p.id} className="hover:bg-gray-50/50">
+                        <tr key={p.id} className={`hover:bg-gray-50/50 ${editingProduct?.id === p.id ? 'bg-orange-50/50' : ''}`}>
                           <td className="p-2.5 flex items-center space-x-2">
                             <img src={p.image_url} alt="" className="w-8 h-8 object-cover rounded border" />
                             <span className="font-bold text-gray-900 line-clamp-1">{p.name}</span>
@@ -535,9 +675,22 @@ export default function App() {
                             />
                           </td>
                           <td className="p-2.5 text-center">
-                            <button onClick={() => handleDeleteProduct(p.id)} className="text-gray-400 hover:text-red-600">
-                              <Trash2 className="w-4 h-4 inline" />
-                            </button>
+                            <div className="flex items-center justify-center space-x-3">
+                              <button 
+                                onClick={() => startEditProduct(p)} 
+                                className="text-gray-400 hover:text-green-600 transition-colors"
+                                title="Edit Product Info"
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </button>
+                              <button 
+                                onClick={() => handleDeleteProduct(p.id)} 
+                                className="text-gray-400 hover:text-red-600 transition-colors"
+                                title="Delete Product"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
