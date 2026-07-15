@@ -24,9 +24,9 @@ export default function App() {
   const [uploading, setUploading] = useState(false);
 
   // YOUR OFFICIAL LINKS & HANDLES
-  const WHATSAPP_NUMBER = '2250100130109'; // Replace with your WhatsApp number
-  const FACEBOOK_URL = 'https://facebook.com/your-profile'; // Replace with your Facebook link
-  const TIKTOK_URL = 'https://tiktok.com/@donchike7'; // Replace with your TikTok link
+  const WHATSAPP_NUMBER = '2250100130109'; 
+  const FACEBOOK_URL = 'https://facebook.com/your-profile'; 
+  const TIKTOK_URL = 'https://tiktok.com/@your-profile'; 
   
   const ADMIN_SECRET_PASSPHRASE = 'DonChike2026';
 
@@ -51,21 +51,75 @@ export default function App() {
     if (adminPassword === ADMIN_SECRET_PASSPHRASE) {
       setIsAdminAuthenticated(true);
       setAuthError('');
-      setAdminPassword(''); // Clear the password field input after login
+      setAdminPassword(''); 
     } else {
       setAuthError('Invalid credentials.');
     }
   };
 
-  // SECURE NAVIGATION CONTROLLER
   const handleViewToggle = () => {
     if (view === 'client') {
       setView('admin');
     } else {
-      // Locking the dashboard immediately when returning to the shop view
       setIsAdminAuthenticated(false);
       setView('client');
     }
+  };
+
+  // HELPER FUNCTION: AUTOMATIC IMAGE COMPRESSOR
+  const compressImage = (file, maxWidth = 800, maxHeight = 800, quality = 0.75) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target.result;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          // Calculate new dimensions maintaining aspect ratio
+          if (width > height) {
+            if (width > maxWidth) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            }
+          } else {
+            if (height > maxHeight) {
+              width = Math.round((width * maxHeight) / height);
+              height = maxHeight;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Convert canvas back to a compressed JPEG file blob
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                // Convert blob back to a File object
+                const compressedFile = new File([blob], file.name, {
+                  type: 'image/jpeg',
+                  lastModified: Date.now(),
+                });
+                resolve(compressedFile);
+              } else {
+                reject(new Error('Canvas compression failed'));
+              }
+            },
+            'image/jpeg',
+            quality
+          );
+        };
+        img.onerror = (err) => reject(err);
+      };
+      reader.onerror = (err) => reject(err);
+    });
   };
 
   const addToCart = (product) => {
@@ -145,16 +199,26 @@ export default function App() {
 
     try {
       if (imageFile) {
-        const cleanName = imageFile.name.replace(/[^a-zA-Z0-9.]/g, '_');
+        let fileToUpload = imageFile;
+        try {
+          fileToUpload = await compressImage(imageFile, 800, 800, 0.75);
+          console.log(`Compressed: Original size ${imageFile.size} -> New size ${fileToUpload.size}`);
+        } catch (compressionError) {
+          console.warn("Failed to compress image, attempting original upload:", compressionError);
+        }
+
+        const cleanName = fileToUpload.name.replace(/[^a-zA-Z0-9.]/g, '_');
         const fileName = `${Date.now()}_${cleanName}`;
         
         const { error: upErr } = await supabase.storage
           .from('product-images') 
-          .upload(fileName, imageFile, { cacheControl: '3600', upsert: false });
+          .upload(fileName, fileToUpload, { cacheControl: '3600', upsert: false });
 
         if (!upErr) {
           const { data } = supabase.storage.from('product-images').getPublicUrl(fileName);
           if (data?.publicUrl) image_url = data.publicUrl;
+        } else {
+          throw upErr;
         }
       }
 
@@ -178,10 +242,10 @@ export default function App() {
       setImageFile(null);
       
       await fetchProducts();
-      alert('Product published beautifully!');
+      alert('Product published beautifully with compressed image!');
     } catch (err) {
       console.error(err);
-      alert(`Database Error: ${err.message}`);
+      alert(`Upload/Database Error: ${err.message}`);
     } finally {
       setUploading(false);
     }
@@ -196,32 +260,32 @@ export default function App() {
   });
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7] text-gray-900 font-sans antialiased">
+    <div className="min-h-screen bg-[#f5f5f7] text-gray-900 font-sans antialiased relative">
       
       {/* BRAND HEADER */}
       <header className="bg-white text-black sticky top-0 z-40 shadow-sm border-b border-gray-100 px-4 py-3">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           
           {/* Logo */}
-          <div className="flex items-center space-x-2 cursor-pointer" onClick={() => { setIsAdminAuthenticated(false); setView('client'); setSearchTerm(''); }}>
+          <div className="flex items-center space-x-2 cursor-pointer shrink-0" onClick={() => { setIsAdminAuthenticated(false); setView('client'); setSearchTerm(''); }}>
             <span className="bg-[#f68b1e] text-white p-2 rounded-xl shadow-md">
               <ShoppingBag className="w-5 h-5" />
             </span>
-            <span className="font-black text-xl tracking-tight uppercase">
+            <span className="font-black text-lg tracking-tight uppercase hidden xs:inline-block">
               DONCHIKE<span className="text-[#f68b1e] font-light lowercase">cosmetics</span>
             </span>
           </div>
           
           {/* Action Area */}
-          <div className="flex items-center space-x-3 sm:space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-4 ml-auto">
             
             {/* SOCIAL ICONS GROUP */}
-            <div className="flex items-center space-x-1.5 sm:space-x-2 border-r border-gray-200 pr-3 sm:pr-4">
+            <div className="flex items-center space-x-1 sm:space-x-2 border-r border-gray-200 pr-2 sm:pr-4 shrink-0">
               <a 
                 href={`https://wa.me/${WHATSAPP_NUMBER}`}
                 target="_blank" 
                 rel="noreferrer"
-                className="p-1.5 sm:p-2 rounded-lg bg-green-50 hover:bg-green-100 text-green-600 transition-colors flex items-center justify-center"
+                className="p-1.5 rounded-lg bg-green-50 hover:bg-green-100 text-green-600 transition-colors flex items-center justify-center"
                 title="Chat on WhatsApp"
               >
                 <Smartphone className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -231,7 +295,7 @@ export default function App() {
                 href={FACEBOOK_URL} 
                 target="_blank" 
                 rel="noreferrer"
-                className="p-1.5 sm:p-2 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 font-bold text-xs transition-colors w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center"
+                className="p-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 font-bold text-xs transition-colors w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center"
                 title="Follow on Facebook"
               >
                 f
@@ -241,25 +305,28 @@ export default function App() {
                 href={TIKTOK_URL} 
                 target="_blank" 
                 rel="noreferrer"
-                className="p-1.5 sm:p-2 rounded-lg bg-zinc-50 hover:bg-zinc-100 text-zinc-900 transition-colors flex items-center justify-center"
+                className="p-1.5 rounded-lg bg-zinc-50 hover:bg-zinc-100 text-zinc-900 transition-colors flex items-center justify-center"
                 title="Follow on TikTok"
               >
                 <Video className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </a>
             </div>
 
-            {/* Admin Portal Toggle (Now locks down securely when clicked to go back) */}
+            {/* Admin Portal Toggle */}
             <button 
               onClick={handleViewToggle} 
-              className="px-2.5 py-1.5 text-xs rounded-xl font-bold border border-gray-200 hover:bg-gray-50 text-gray-700 flex items-center space-x-1"
+              className="px-2 py-1.5 text-xs rounded-xl font-bold border border-gray-200 hover:bg-gray-50 text-gray-700 flex items-center space-x-1 shrink-0"
             >
               <ShieldCheck className="w-3.5 h-3.5 text-[#f68b1e]" />
               <span className="hidden md:inline">{view === 'client' ? 'Admin Portal' : 'Back to Shop'}</span>
             </button>
 
-            {/* Cart Button */}
+            {/* Header Cart Button (Secured from shrinking) */}
             {view === 'client' && (
-              <button onClick={() => setIsCartOpen(true)} className="relative bg-black text-white p-2.5 rounded-xl flex items-center space-x-2 hover:bg-zinc-800 transition-colors">
+              <button 
+                onClick={() => setIsCartOpen(true)} 
+                className="relative bg-black text-white p-2.5 rounded-xl flex items-center space-x-2 hover:bg-zinc-800 transition-colors shrink-0"
+              >
                 <ShoppingCart className="w-4 h-4" />
                 {cartCount > 0 && (
                   <span className="bg-[#f68b1e] text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">
@@ -482,6 +549,19 @@ export default function App() {
             </div>
           )}
         </main>
+      )}
+
+      {/* MOBILE FLOATING CART BUTTON (Only displays when shopping on mobile and items are in cart) */}
+      {view === 'client' && cartCount > 0 && (
+        <button 
+          onClick={() => setIsCartOpen(true)} 
+          className="fixed bottom-6 right-6 z-50 md:hidden bg-black text-white p-4 rounded-full shadow-2xl flex items-center justify-center space-x-2 active:scale-95 hover:bg-zinc-900 transition-all border border-zinc-800"
+        >
+          <ShoppingCart className="w-6 h-6 text-[#f68b1e]" />
+          <span className="bg-[#f68b1e] text-white text-xs font-black px-2 py-0.5 rounded-full">
+            {cartCount}
+          </span>
+        </button>
       )}
 
       {/* CART SYSTEM */}
