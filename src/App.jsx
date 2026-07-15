@@ -266,12 +266,12 @@ export default function App() {
       <header className="bg-white text-black sticky top-0 z-40 shadow-sm border-b border-gray-100 px-4 py-3">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           
-          {/* Logo */}
+          {/* Logo & Company Name */}
           <div className="flex items-center space-x-2 cursor-pointer shrink-0" onClick={() => { setIsAdminAuthenticated(false); setView('client'); setSearchTerm(''); }}>
             <span className="bg-[#f68b1e] text-white p-2 rounded-xl shadow-md">
               <ShoppingBag className="w-5 h-5" />
             </span>
-            <span className="font-black text-lg tracking-tight uppercase hidden xs:inline-block">
+            <span className="font-black text-sm sm:text-lg tracking-tight uppercase">
               DONCHIKE<span className="text-[#f68b1e] font-light lowercase">cosmetics</span>
             </span>
           </div>
@@ -321,7 +321,7 @@ export default function App() {
               <span className="hidden md:inline">{view === 'client' ? 'Admin Portal' : 'Back to Shop'}</span>
             </button>
 
-            {/* Header Cart Button (Secured from shrinking) */}
+            {/* Header Cart Button */}
             {view === 'client' && (
               <button 
                 onClick={() => setIsCartOpen(true)} 
@@ -551,7 +551,7 @@ export default function App() {
         </main>
       )}
 
-      {/* MOBILE FLOATING CART BUTTON (Only displays when shopping on mobile and items are in cart) */}
+      {/* MOBILE FLOATING CART BUTTON */}
       {view === 'client' && cartCount > 0 && (
         <button 
           onClick={() => setIsCartOpen(true)} 
