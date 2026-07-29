@@ -470,7 +470,7 @@ export default function App() {
                 ✨ Best Store Experience
               </span>
               <h1 className="text-xl md:text-3xl font-black mt-2.5 tracking-tight">Don Chike Cosmetics Collection</h1>
-              <p className="text-zinc-400 text-xs mt-1">Select your items and complete your order instantly via WhatsApp.</p>
+              <p className="text-zinc-400 text-xs mt-1">Sélectionnez vos articles et passez votre commande instantanément via WhatsApp..</p>
             </div>
             <div className="bg-white/5 px-4 py-2.5 rounded-xl border border-white/10 mt-4 md:mt-0">
               <p className="text-[10px] text-zinc-400 uppercase tracking-wider">Fast Dispatch</p>
