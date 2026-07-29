@@ -32,7 +32,7 @@ export default function App() {
 
   // OFFICIAL LINKS & HANDLES
   const WHATSAPP_NUMBER = '2250100130109'; 
-  const FACEBOOK_URL = 'https://facebook.com/your-profile'; 
+  const FACEBOOK_URL = 'https://facebook.com/profil.php?id=61590626370497'; 
   const TIKTOK_URL = 'https://tiktok.com/@your-profile'; 
 
   useEffect(() => {
