@@ -415,7 +415,7 @@ export default function App() {
   {/* Refined Brand Typography */}
   <div className="flex flex-col justify-center">
     <span className="font-black text-base sm:text-xl tracking-wider uppercase text-zinc-900 leading-none group-hover:text-amber-600 transition-colors">
-      DONCHIKE
+      AKUDON VENTURES
     </span>
     <span className="text-[10px] sm:text-[11px] font-bold text-amber-500 tracking-[0.25em] uppercase leading-tight mt-0.5">
       COSMETICS
@@ -575,7 +575,7 @@ export default function App() {
                     <div className="p-3 flex-1 flex flex-col justify-between bg-white">
                       <div>
                         <div className="flex items-center space-x-1 mb-1">
-                          <span className="font-extrabold text-xs text-zinc-900 group-hover:text-[#f68b1e] transition-colors">DONCHIKE</span>
+                          <span className="font-extrabold text-xs text-zinc-900 group-hover:text-[#f68b1e] transition-colors">AKUDON</span>
                           <span className="text-blue-500 text-[10px] font-bold">✔</span>
                         </div>
                         <h3 className="text-xs text-gray-600 line-clamp-2 min-h-[2rem] leading-tight font-medium">
@@ -637,7 +637,7 @@ export default function App() {
                   <label className="text-[10px] font-bold uppercase text-gray-500 block mb-1">Email Address</label>
                   <input 
                     type="email" 
-                    placeholder="admin@donchike.com" 
+                    placeholder="admin@akudon.com" 
                     value={adminEmail} 
                     onChange={e => setAdminEmail(e.target.value)} 
                     className="w-full border p-2.5 rounded-xl text-xs bg-white text-black focus:outline-none focus:border-[#f68b1e]" 
