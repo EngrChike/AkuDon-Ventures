@@ -201,9 +201,9 @@ export default function App() {
     if (cart.length === 0) return;
     let msg = '✨ *AKUDON VENTURE - NEW ORDER* ✨\n------------------------------------------\n\n';
     cart.forEach((item, idx) => {
-      msg += `🛍️ *${idx + 1}. ${item.name}*\n   Price: ${item.price.toLocaleString()} CFA\n   Qty: ${item.quantity}\n------------------------------------------\n`;
+      msg += `🛍️ *${idx + 1}. ${item.name}*\n   Price: #${item.price.toLocaleString()}\n   Qty: ${item.quantity}\n------------------------------------------\n`;
     });
-    msg += `\n🎯 *GRAND TOTAL:* ${cartTotal.toLocaleString()} CFA\n\nConfirming availability for immediate dispatch!`;
+    msg += `\n🎯 *GRAND TOTAL:* #${cartTotal.toLocaleString()}\n\nConfirming availability for immediate dispatch!`;
     window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
@@ -272,11 +272,11 @@ export default function App() {
         const fileName = `${Date.now()}_${cleanName}`;
         
         const { error: upErr } = await supabase.storage
-          .from('product-images') 
+          .from('PRODUCT-IMAGES') 
           .upload(fileName, fileToUpload, { cacheControl: '3600', upsert: false });
 
         if (!upErr) {
-          const { data } = supabase.storage.from('product-images').getPublicUrl(fileName);
+          const { data } = supabase.storage.from('PRODUCT-IMAGES').getPublicUrl(fileName);
           if (data?.publicUrl) image_url = data.publicUrl;
         } else {
           throw upErr;
@@ -332,11 +332,11 @@ export default function App() {
         const fileName = `${Date.now()}_${cleanName}`;
 
         const { error: upErr } = await supabase.storage
-          .from('product-images')
+          .from('PRODUCT-IMAGES')
           .upload(fileName, fileToUpload, { cacheControl: '3600', upsert: false });
 
         if (!upErr) {
-          const { data } = supabase.storage.from('product-images').getPublicUrl(fileName);
+          const { data } = supabase.storage.from('PRODUCT-IMAGES').getPublicUrl(fileName);
           if (data?.publicUrl) image_url = data.publicUrl;
         } else {
           throw upErr;
@@ -591,7 +591,7 @@ export default function App() {
                       </div>
                       
                       <div className="mt-3">
-                        <p className="text-sm font-black text-[#f68b1e] tracking-tight">{p.price.toLocaleString()} CFA</p>
+                        <p className="text-sm font-black text-[#f68b1e] tracking-tight">#{p.price.toLocaleString()}</p>
 
                         <div className="mt-2.5">
                           {isOutOfStock ? (
@@ -711,7 +711,7 @@ export default function App() {
                     <div className="grid grid-cols-2 gap-3">
                       <input 
                         type="number" 
-                        placeholder="Price (CFA)" 
+                        placeholder="Price (#)" 
                         value={price} 
                         onChange={e => setPrice(e.target.value)} 
                         className="w-full border p-2 text-xs rounded-lg bg-white text-black" 
@@ -775,7 +775,7 @@ export default function App() {
                               <img src={p.image_url} alt="" className="w-8 h-8 object-cover rounded border" />
                               <span className="font-bold text-gray-900 line-clamp-1">{p.name}</span>
                             </td>
-                            <td className="p-2.5 font-bold text-gray-700">{p.price.toLocaleString()} CFA</td>
+                            <td className="p-2.5 font-bold text-gray-700">#{p.price.toLocaleString()}</td>
                             <td className="p-2.5 text-center">
                               <input 
                                 type="number" 
@@ -847,7 +847,7 @@ export default function App() {
                         <img src={item.image_url} alt="" className="w-10 h-10 object-cover rounded bg-white border" />
                         <div>
                           <h4 className="text-xs font-bold text-gray-900 line-clamp-1">{item.name}</h4>
-                          <p className="text-xs font-bold text-[#f68b1e]">{item.price.toLocaleString()} CFA</p>
+                          <p className="text-xs font-bold text-[#f68b1e]">#{item.price.toLocaleString()}</p>
                         </div>
                       </div>
                       <div className="flex items-center space-x-1.5 bg-white border rounded p-0.5">
@@ -864,7 +864,7 @@ export default function App() {
               <div className="border-t pt-3">
                 <div className="flex justify-between items-baseline font-bold mb-3">
                   <span className="text-gray-400 text-xs uppercase">Total:</span>
-                  <span className="text-lg font-black text-black">{cartTotal.toLocaleString()} CFA</span>
+                  <span className="text-lg font-black text-black">#{cartTotal.toLocaleString()}</span>
                 </div>
                 <button onClick={handleWhatsAppCheckout} className="w-full bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-xl font-bold text-xs uppercase text-center block">
                   Order via WhatsApp
