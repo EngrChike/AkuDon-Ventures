@@ -31,7 +31,7 @@ export default function App() {
   const [editingProduct, setEditingProduct] = useState(null);
 
   // OFFICIAL LINKS & HANDLES
-  const WHATSAPP_NUMBER = '+2349032690023'; 
+  const WHATSAPP_NUMBER = '+2349032690028'; 
   const FACEBOOK_URL = 'https://facebook.com/profile.php?id=61590626370497'; 
   const TIKTOK_URL = 'https://tiktok.com/@your-profile'; 
 
