@@ -189,7 +189,11 @@ export default function AdminDashboard() {
                 <tbody className="divide-y">
                   {products.map(p => (
                     <tr key={p.id}>
-                      <td className="p-2 font-bold">{p.name}</td>
+                      <td className="p-2 flex items-center space-x-2">
+                        {/* Restored thumbnail image */}
+                        <img src={p.image_url} alt="" className="w-8 h-8 object-cover rounded border" />
+                        <span className="font-bold text-gray-900 line-clamp-1">{p.name}</span>
+                      </td>
                       <td className="p-2">#{p.price.toLocaleString()}</td>
                       <td className="p-2">{p.quantity}</td>
                       <td className="p-2 flex space-x-2">
