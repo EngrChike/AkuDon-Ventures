@@ -564,32 +564,44 @@ export default function App() {
                 const isOutOfStock = p.quantity !== null ? p.quantity <= 0 : !p.stock_status;
 
                 return (
-                  <div key={p.id} className="bg-white rounded-xl border border-gray-200/60 overflow-hidden flex flex-col justify-between group transition-all duration-300 hover:shadow-lg relative">
+                  <div key={p.id} className="bg-white rounded-xl border border-gray-200/60 overflow-hidden flex flex-col justify-between group transition-all duration-500 hover:shadow-2xl hover:-translate-y-1.5 relative cursor-pointer">
                     
-                    <button className="absolute top-2 right-2 z-10 p-1.5 bg-white rounded-full shadow-sm text-gray-400 hover:text-red-500">
+                    {/* Hover-animated Heart Button */}
+                    <button className="absolute top-2 right-2 z-20 p-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-sm text-gray-400 hover:text-red-500 hover:scale-110 transition-all duration-300">
                       <Heart className="w-3.5 h-3.5" />
                     </button>
 
+                    {/* LUXURY IMAGE CONTAINER */}
                     <div className="relative bg-gray-50 aspect-[4/5] w-full overflow-hidden flex items-center justify-center border-b border-gray-100">
-                      <img src={p.image_url} alt={p.name} className="object-cover w-full h-full" />
                       
-                      <div className="absolute bottom-2 left-2 z-10">
-                        <span className="bg-[#f68b1e] text-white font-bold text-[10px] px-2 py-0.5 rounded shadow-md">
+                      {/* 1. Slow Zoom Effect on Image */}
+                      <img 
+                        src={p.image_url} 
+                        alt={p.name} 
+                        className="object-cover w-full h-full transition-transform duration-700 ease-out group-hover:scale-110" 
+                      />
+                      
+                      {/* 2. Soft Luxury Vignette (Dark Gradient Fade-in) */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 z-10 pointer-events-none"></div>
+                      
+                      {/* 3. Floating Badge Animation */}
+                      <div className="absolute bottom-2 left-2 z-20 transition-transform duration-500 group-hover:-translate-y-1">
+                        <span className="bg-[#f68b1e] text-white font-bold text-[10px] px-2 py-0.5 rounded shadow-lg">
                           {p.quantity > 0 ? `${p.quantity} Items Left` : 'Out of Stock'}
                         </span>
                       </div>
 
                       {isOutOfStock && (
-                        <div className="absolute inset-0 bg-white/80 backdrop-blur-[1px] flex items-center justify-center">
-                          <span className="bg-zinc-800 text-white font-bold text-[10px] uppercase tracking-widest px-2.5 py-1 rounded">SOLD OUT</span>
+                        <div className="absolute inset-0 bg-white/40 backdrop-blur-[2px] flex items-center justify-center z-20">
+                          <span className="bg-zinc-900 text-white font-bold text-[10px] uppercase tracking-widest px-3 py-1.5 rounded shadow-xl">SOLD OUT</span>
                         </div>
                       )}
                     </div>
 
-                    <div className="p-3 flex-1 flex flex-col justify-between bg-white">
+                    <div className="p-3 flex-1 flex flex-col justify-between bg-white relative z-20">
                       <div>
                         <div className="flex items-center space-x-1 mb-1">
-                          <span className="font-extrabold text-xs text-zinc-900 group-hover:text-[#f68b1e] transition-colors">AKUDON</span>
+                          <span className="font-extrabold text-xs text-zinc-900 group-hover:text-[#f68b1e] transition-colors duration-300">AKUDON</span>
                           <span className="text-blue-500 text-[10px] font-bold">✔</span>
                         </div>
                         <h3 className="text-xs text-gray-600 line-clamp-2 min-h-[2rem] leading-tight font-medium">
@@ -614,12 +626,15 @@ export default function App() {
                             </button>
                           ) : itemQtyInCart > 0 ? (
                             <div className="flex items-center justify-between border border-[#f68b1e] rounded-lg overflow-hidden bg-white h-7 shadow-sm">
-                              <button onClick={() => changeQuantity(p, -1)} className="bg-[#f68b1e]/5 text-[#f68b1e] w-8 h-full flex items-center justify-center font-bold">-</button>
+                              <button onClick={() => changeQuantity(p, -1)} className="bg-[#f68b1e]/5 text-[#f68b1e] hover:bg-[#f68b1e]/10 transition-colors w-8 h-full flex items-center justify-center font-bold">-</button>
                               <span className="w-full text-center text-xs font-black text-black">{itemQtyInCart}</span>
-                              <button onClick={() => changeQuantity(p, 1)} className="bg-[#f68b1e]/5 text-[#f68b1e] w-8 h-full flex items-center justify-center font-bold">+</button>
+                              <button onClick={() => changeQuantity(p, 1)} className="bg-[#f68b1e]/5 text-[#f68b1e] hover:bg-[#f68b1e]/10 transition-colors w-8 h-full flex items-center justify-center font-bold">+</button>
                             </div>
                           ) : (
-                            <button onClick={() => addToCart(p)} className="w-full bg-[#f68b1e] hover:bg-[#e07a16] text-white font-bold py-1.5 rounded-lg text-xs tracking-wide transition-all">
+                            <button 
+                              onClick={() => addToCart(p)} 
+                              className="w-full bg-[#f68b1e] hover:bg-[#e07a16] text-white font-bold py-1.5 rounded-lg text-xs tracking-wide transition-all duration-300 active:scale-95 shadow-md hover:shadow-lg"
+                            >
                               Add to Cart
                             </button>
                           )}
