@@ -2,6 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from './utils/supabaseClient';
 import { ShoppingCart, ShoppingBag, ShieldCheck, Smartphone, Star, Heart, Trash2, Pencil, Video, Search, X, LogOut } from 'lucide-react';
 
+// HELPER: FISHER-YATES SHUFFLE ALGORITHM
+const shuffleArray = (array) => {
+  let shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
+
 export default function App() {
   const [view, setView] = useState('client'); 
   
@@ -55,9 +65,13 @@ export default function App() {
     try {
       const { data, error } = await supabase
         .from('products')
-        .select('*')
-        .order('created_at', { ascending: false });
-      if (!error && data) setProducts(data);
+        .select('*');
+        
+      if (!error && data) {
+        // Apply the randomizer before setting the state
+        const randomizedData = shuffleArray(data);
+        setProducts(randomizedData);
+      }
     } catch (err) {
       console.error("Fetch Error: ", err);
     }
@@ -271,13 +285,11 @@ export default function App() {
         const cleanName = fileToUpload.name.replace(/[^a-zA-Z0-9.]/g, '_');
         const fileName = `${Date.now()}_${cleanName}`;
         
-        // --- CHANGED TO LOWERCASE HERE ---
         const { error: upErr } = await supabase.storage
           .from('product-images') 
           .upload(fileName, fileToUpload, { cacheControl: '3600', upsert: false });
 
         if (!upErr) {
-          // --- CHANGED TO LOWERCASE HERE ---
           const { data } = supabase.storage.from('product-images').getPublicUrl(fileName);
           if (data?.publicUrl) image_url = data.publicUrl;
         } else {
@@ -333,13 +345,11 @@ export default function App() {
         const cleanName = fileToUpload.name.replace(/[^a-zA-Z0-9.]/g, '_');
         const fileName = `${Date.now()}_${cleanName}`;
 
-        // --- CHANGED TO LOWERCASE HERE ---
         const { error: upErr } = await supabase.storage
           .from('product-images')
           .upload(fileName, fileToUpload, { cacheControl: '3600', upsert: false });
 
         if (!upErr) {
-          // --- CHANGED TO LOWERCASE HERE ---
           const { data } = supabase.storage.from('product-images').getPublicUrl(fileName);
           if (data?.publicUrl) image_url = data.publicUrl;
         } else {
