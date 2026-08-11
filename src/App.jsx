@@ -45,46 +45,21 @@ export default function App() {
   const FACEBOOK_URL = 'https://facebook.com/profile.php?id=61590626370497'; 
   const TIKTOK_URL = 'https://tiktok.com/@your-profile'; 
 
-  // FETCH PRODUCTS & AUTH ON MOUNT
   useEffect(() => {
     fetchProducts();
 
+    // Check existing active Supabase session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
     });
 
+    // Listen for auth state changes (login/logout events)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
     });
 
     return () => subscription.unsubscribe();
   }, []);
-
-  // SCROLL-REVEAL OBSERVER FOR LUXURY ANIMATION
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries, obs) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.remove('opacity-0', 'translate-y-12');
-            entry.target.classList.add('opacity-100', 'translate-y-0');
-            obs.unobserve(entry.target); // Only animate once to prevent annoying re-triggers
-          }
-        });
-      },
-      { threshold: 0.05, rootMargin: '0px 0px -20px 0px' }
-    );
-
-    const timeoutId = setTimeout(() => {
-      const elements = document.querySelectorAll('.product-card');
-      elements.forEach((el) => observer.observe(el));
-    }, 150);
-
-    return () => {
-      clearTimeout(timeoutId);
-      observer.disconnect();
-    };
-  }, [filteredProducts, view]);
 
   const fetchProducts = async () => {
     try {
@@ -93,6 +68,7 @@ export default function App() {
         .select('*');
         
       if (!error && data) {
+        // Apply the randomizer before setting the state
         const randomizedData = shuffleArray(data);
         setProducts(randomizedData);
       }
@@ -101,6 +77,7 @@ export default function App() {
     }
   };
 
+  // SECURE SUPABASE AUTH LOGIN
   const handleAdminLogin = async (e) => {
     e.preventDefault();
     setAuthError('');
@@ -125,6 +102,7 @@ export default function App() {
     }
   };
 
+  // LOGOUT HANDLER
   const handleAdminLogout = async () => {
     await supabase.auth.signOut();
     cancelEdit();
@@ -140,6 +118,7 @@ export default function App() {
     }
   };
 
+  // HELPER FUNCTION: AUTOMATIC IMAGE COMPRESSOR
   const compressImage = (file, maxWidth = 800, maxHeight = 800, quality = 0.75) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -152,6 +131,7 @@ export default function App() {
           let width = img.width;
           let height = img.height;
 
+          // Calculate new dimensions maintaining aspect ratio
           if (width > height) {
             if (width > maxWidth) {
               height = Math.round((height * maxWidth) / width);
@@ -170,9 +150,11 @@ export default function App() {
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
 
+          // Convert canvas back to a compressed JPEG file blob
           canvas.toBlob(
             (blob) => {
               if (blob) {
+                // Convert blob back to a File object
                 const compressedFile = new File([blob], file.name, {
                   type: 'image/jpeg',
                   lastModified: Date.now(),
@@ -403,6 +385,7 @@ export default function App() {
     }
   };
 
+  // REALTIME SEARCH FILTER LOGIC
   const filteredProducts = products.filter(product => {
     const pName = product.name ? product.name.toLowerCase() : '';
     const pDesc = product.description ? product.description.toLowerCase() : '';
@@ -413,58 +396,57 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#f5f5f7] text-gray-900 font-sans antialiased relative">
       
-      {/* CUSTOM LUXURY ANIMATION CSS */}
-      <style>{`
-        @keyframes smoothBreathe {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.07); }
-        }
-        /* Applied only to mobile so images feel 'alive' without interaction */
-        .mobile-alive-img {
-          animation: smoothBreathe 10s infinite ease-in-out;
-        }
-        @media (min-width: 768px) {
-          .mobile-alive-img {
-            animation: none;
-          }
-        }
-      `}</style>
-
       {/* BRAND HEADER */}
       <header className="bg-white text-black sticky top-0 z-40 shadow-sm border-b border-gray-100 px-4 py-3">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           
          {/* NEW MODERN LUXURY LOGO */}
-          <div 
-            className="flex items-center space-x-2.5 cursor-pointer shrink-0 group select-none active:scale-95 transition-transform" 
-            onClick={() => { cancelEdit(); setView('client'); setSearchTerm(''); }}
-          >
-            <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-amber-500 via-orange-500 to-amber-600 rounded-xl flex items-center justify-center shadow-md md:group-hover:scale-105 transition-transform duration-200 p-1.5">
-              <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full text-white">
-                <path d="M30 25 C30 25, 45 15, 50 15 C55 15, 70 25, 70 25 C70 45, 60 75, 50 85 C40 75, 30 45, 30 25 Z" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round"/>
-                <circle cx="50" cy="42" r="7" fill="currentColor" />
-                <path d="M40 60 C45 65, 55 65, 60 60" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />
-              </svg>
-            </div>
+<div 
+  className="flex items-center space-x-2.5 cursor-pointer shrink-0 group select-none" 
+  onClick={() => { cancelEdit(); setView('client'); setSearchTerm(''); }}
+>
+  {/* Custom Luxury DC Emblem Icon */}
+  <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-amber-500 via-orange-500 to-amber-600 rounded-xl flex items-center justify-center shadow-md group-hover:scale-105 transition-transform duration-200 p-1.5">
+    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full text-white">
+      {/* Interlocking Monogram/Crown Shape */}
+      <path 
+        d="M30 25 C30 25, 45 15, 50 15 C55 15, 70 25, 70 25 C70 45, 60 75, 50 85 C40 75, 30 45, 30 25 Z" 
+        stroke="currentColor" 
+        strokeWidth="6" 
+        strokeLinecap="round" 
+        strokeLinejoin="round"
+      />
+      <circle cx="50" cy="42" r="7" fill="currentColor" />
+      <path 
+        d="M40 60 C45 65, 55 65, 60 60" 
+        stroke="currentColor" 
+        strokeWidth="6" 
+        strokeLinecap="round" 
+      />
+    </svg>
+  </div>
 
-            <div className="flex flex-col justify-center">
-              <span className="font-black text-base sm:text-xl tracking-wider uppercase text-zinc-900 leading-none md:group-hover:text-amber-600 transition-colors">
-                AKUDON VENTURES
-              </span>
-              <span className="text-[10px] sm:text-[11px] font-bold text-amber-500 tracking-[0.25em] uppercase leading-tight mt-0.5">
-                COSMETICS
-              </span>
-            </div>
-          </div>
-
+  {/* Refined Brand Typography */}
+  <div className="flex flex-col justify-center">
+    <span className="font-black text-base sm:text-xl tracking-wider uppercase text-zinc-900 leading-none group-hover:text-amber-600 transition-colors">
+      AKUDON VENTURES
+    </span>
+    <span className="text-[10px] sm:text-[11px] font-bold text-amber-500 tracking-[0.25em] uppercase leading-tight mt-0.5">
+      COSMETICS
+    </span>
+  </div>
+</div>
           {/* Action Area */}
           <div className="flex items-center space-x-2 sm:space-x-4 ml-auto">
+            
+            {/* SOCIAL ICONS GROUP */}
             <div className="flex items-center space-x-1 sm:space-x-2 border-r border-gray-200 pr-2 sm:pr-4 shrink-0">
               <a 
                 href={`https://wa.me/${WHATSAPP_NUMBER}`}
                 target="_blank" 
                 rel="noreferrer"
-                className="p-1.5 rounded-lg bg-green-50 active:bg-green-100 md:hover:bg-green-100 text-green-600 transition-colors flex items-center justify-center active:scale-90"
+                className="p-1.5 rounded-lg bg-green-50 hover:bg-green-100 text-green-600 transition-colors flex items-center justify-center"
+                title="Chat on WhatsApp"
               >
                 <Smartphone className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </a>
@@ -473,7 +455,8 @@ export default function App() {
                 href={FACEBOOK_URL} 
                 target="_blank" 
                 rel="noreferrer"
-                className="p-1.5 rounded-lg bg-blue-50 active:bg-blue-100 md:hover:bg-blue-100 text-blue-600 font-bold text-xs transition-colors w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center active:scale-90"
+                className="p-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 font-bold text-xs transition-colors w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center"
+                title="Follow on Facebook"
               >
                 f
               </a>
@@ -482,24 +465,27 @@ export default function App() {
                 href={TIKTOK_URL} 
                 target="_blank" 
                 rel="noreferrer"
-                className="p-1.5 rounded-lg bg-zinc-50 active:bg-zinc-100 md:hover:bg-zinc-100 text-zinc-900 transition-colors flex items-center justify-center active:scale-90"
+                className="p-1.5 rounded-lg bg-zinc-50 hover:bg-zinc-100 text-zinc-900 transition-colors flex items-center justify-center"
+                title="Follow on TikTok"
               >
                 <Video className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </a>
             </div>
 
+            {/* Admin Portal Toggle */}
             <button 
               onClick={handleViewToggle} 
-              className="px-2 py-1.5 text-xs rounded-xl font-bold border border-gray-200 active:bg-gray-50 md:hover:bg-gray-50 text-gray-700 flex items-center space-x-1 shrink-0 active:scale-95 transition-transform"
+              className="px-2 py-1.5 text-xs rounded-xl font-bold border border-gray-200 hover:bg-gray-50 text-gray-700 flex items-center space-x-1 shrink-0"
             >
               <ShieldCheck className="w-3.5 h-3.5 text-[#f68b1e]" />
               <span className="hidden md:inline">{view === 'client' ? 'Admin Portal' : 'Back to Shop'}</span>
             </button>
 
+            {/* Header Cart Button */}
             {view === 'client' && (
               <button 
                 onClick={() => setIsCartOpen(true)} 
-                className="relative bg-black text-white p-2.5 rounded-xl flex items-center space-x-2 md:hover:bg-zinc-800 active:scale-95 transition-all shrink-0"
+                className="relative bg-black text-white p-2.5 rounded-xl flex items-center space-x-2 hover:bg-zinc-800 transition-colors shrink-0"
               >
                 <ShoppingCart className="w-4 h-4" />
                 {cartCount > 0 && (
@@ -517,15 +503,16 @@ export default function App() {
       {view === 'client' && (
         <main className="max-w-7xl w-full mx-auto p-4 md:py-8">
           
+          {/* Hero Banner */}
           <div className="bg-gradient-to-r from-zinc-950 via-zinc-900 to-amber-950 text-white rounded-2xl p-6 md:p-8 mb-6 border border-zinc-800 flex flex-col md:flex-row justify-between items-center">
             <div>
-              <span className="bg-[#f68b1e]/10 text-[#f68b1e] text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full border border-[#f68b1e]/20 inline-block animate-pulse">
+              <span className="bg-[#f68b1e]/10 text-[#f68b1e] text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full border border-[#f68b1e]/20">
                 ✨ Best Store Experience
               </span>
               <h1 className="text-xl md:text-3xl font-black mt-2.5 tracking-tight">AKUDON VENTURE COLLECTIONS</h1>
               <p className="text-zinc-400 text-xs mt-1">Select your items and place your order instantly via WhatsApp..</p>
             </div>
-            <div className="bg-white/5 px-4 py-2.5 rounded-xl border border-white/10 mt-4 md:mt-0 shadow-lg">
+            <div className="bg-white/5 px-4 py-2.5 rounded-xl border border-white/10 mt-4 md:mt-0">
               <p className="text-[10px] text-zinc-400 uppercase tracking-wider">Fast Dispatch</p>
               <p className="text-[#f68b1e] font-bold text-sm flex items-center justify-center space-x-1 mt-0.5">
                 <Smartphone className="w-3.5 h-3.5" /> <span>WhatsApp Checkout</span>
@@ -533,6 +520,7 @@ export default function App() {
             </div>
           </div>
 
+          {/* SEARCH BOX INTERFACE */}
           <div className="max-w-md mx-auto mb-8 relative px-1">
             <div className="relative flex items-center">
               <Search className="w-4 h-4 text-gray-400 absolute left-3.5 pointer-events-none" />
@@ -546,7 +534,7 @@ export default function App() {
               {searchTerm && (
                 <button 
                   onClick={() => setSearchTerm('')} 
-                  className="absolute right-3 p-1 rounded-full text-gray-400 active:text-black md:hover:text-black active:bg-gray-100 md:hover:bg-gray-100 transition-colors"
+                  className="absolute right-3 p-1 rounded-full text-gray-400 hover:text-black hover:bg-gray-100 transition-colors"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -559,11 +547,12 @@ export default function App() {
             )}
           </div>
 
+          {/* SEARCH RESULTS LAYOUT TARGET */}
           {filteredProducts.length === 0 ? (
             <div className="bg-white rounded-2xl p-16 text-center border border-gray-100">
               <p className="text-gray-400 text-sm">No cosmetics products match your search.</p>
               {searchTerm && (
-                <button onClick={() => setSearchTerm('')} className="mt-2 text-xs text-[#f68b1e] font-bold md:hover:underline active:underline">
+                <button onClick={() => setSearchTerm('')} className="mt-2 text-xs text-[#f68b1e] font-bold hover:underline">
                   Clear search query
                 </button>
               )}
@@ -575,29 +564,28 @@ export default function App() {
                 const isOutOfStock = p.quantity !== null ? p.quantity <= 0 : !p.stock_status;
 
                 return (
-                  <div 
-                    key={p.id} 
-                    // PRODUCT CARD NOW HAS OPACITY-0 AND TRANSLATE-Y-12 DEFAULT FOR SCROLL REVEAL
-                    className="product-card opacity-0 translate-y-12 transition-all duration-[800ms] ease-out bg-white rounded-xl border border-gray-200/60 overflow-hidden flex flex-col justify-between group md:hover:shadow-2xl md:hover:-translate-y-1.5 active:scale-[0.98] relative cursor-pointer"
-                  >
+                  <div key={p.id} className="bg-white rounded-xl border border-gray-200/60 overflow-hidden flex flex-col justify-between group transition-all duration-500 hover:shadow-2xl hover:-translate-y-1.5 relative cursor-pointer">
                     
-                    <button className="absolute top-2 right-2 z-20 p-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-sm text-gray-400 md:hover:text-red-500 active:text-red-500 active:scale-110 md:hover:scale-110 transition-all duration-300">
+                    {/* Hover-animated Heart Button */}
+                    <button className="absolute top-2 right-2 z-20 p-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-sm text-gray-400 hover:text-red-500 hover:scale-110 transition-all duration-300">
                       <Heart className="w-3.5 h-3.5" />
                     </button>
 
+                    {/* LUXURY IMAGE CONTAINER */}
                     <div className="relative bg-gray-50 aspect-[4/5] w-full overflow-hidden flex items-center justify-center border-b border-gray-100">
                       
-                      {/* Image uses 'mobile-alive-img' for continuous slow breathing on phone, and standard hover scale on desktop */}
+                      {/* 1. Slow Zoom Effect on Image */}
                       <img 
                         src={p.image_url} 
                         alt={p.name} 
-                        className="object-cover w-full h-full transition-transform duration-700 ease-out md:group-hover:scale-110 mobile-alive-img" 
+                        className="object-cover w-full h-full transition-transform duration-700 ease-out group-hover:scale-110" 
                       />
                       
-                      {/* Vignette is partially visible natively on mobile, fades fully on desktop hover */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/5 to-transparent opacity-80 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-700 z-10 pointer-events-none"></div>
+                      {/* 2. Soft Luxury Vignette (Dark Gradient Fade-in) */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 z-10 pointer-events-none"></div>
                       
-                      <div className="absolute bottom-2 left-2 z-20 transition-transform duration-500 md:group-hover:-translate-y-1">
+                      {/* 3. Floating Badge Animation */}
+                      <div className="absolute bottom-2 left-2 z-20 transition-transform duration-500 group-hover:-translate-y-1">
                         <span className="bg-[#f68b1e] text-white font-bold text-[10px] px-2 py-0.5 rounded shadow-lg">
                           {p.quantity > 0 ? `${p.quantity} Items Left` : 'Out of Stock'}
                         </span>
@@ -613,7 +601,7 @@ export default function App() {
                     <div className="p-3 flex-1 flex flex-col justify-between bg-white relative z-20">
                       <div>
                         <div className="flex items-center space-x-1 mb-1">
-                          <span className="font-extrabold text-xs text-zinc-900 md:group-hover:text-[#f68b1e] transition-colors duration-300">AKUDON</span>
+                          <span className="font-extrabold text-xs text-zinc-900 group-hover:text-[#f68b1e] transition-colors duration-300">AKUDON</span>
                           <span className="text-blue-500 text-[10px] font-bold">✔</span>
                         </div>
                         <h3 className="text-xs text-gray-600 line-clamp-2 min-h-[2rem] leading-tight font-medium">
@@ -638,14 +626,14 @@ export default function App() {
                             </button>
                           ) : itemQtyInCart > 0 ? (
                             <div className="flex items-center justify-between border border-[#f68b1e] rounded-lg overflow-hidden bg-white h-7 shadow-sm">
-                              <button onClick={(e) => { e.stopPropagation(); changeQuantity(p, -1); }} className="bg-[#f68b1e]/5 text-[#f68b1e] active:bg-[#f68b1e]/20 md:hover:bg-[#f68b1e]/10 transition-colors w-8 h-full flex items-center justify-center font-bold">-</button>
+                              <button onClick={() => changeQuantity(p, -1)} className="bg-[#f68b1e]/5 text-[#f68b1e] hover:bg-[#f68b1e]/10 transition-colors w-8 h-full flex items-center justify-center font-bold">-</button>
                               <span className="w-full text-center text-xs font-black text-black">{itemQtyInCart}</span>
-                              <button onClick={(e) => { e.stopPropagation(); changeQuantity(p, 1); }} className="bg-[#f68b1e]/5 text-[#f68b1e] active:bg-[#f68b1e]/20 md:hover:bg-[#f68b1e]/10 transition-colors w-8 h-full flex items-center justify-center font-bold">+</button>
+                              <button onClick={() => changeQuantity(p, 1)} className="bg-[#f68b1e]/5 text-[#f68b1e] hover:bg-[#f68b1e]/10 transition-colors w-8 h-full flex items-center justify-center font-bold">+</button>
                             </div>
                           ) : (
                             <button 
-                              onClick={(e) => { e.stopPropagation(); addToCart(p); }} 
-                              className="w-full bg-[#f68b1e] md:hover:bg-[#e07a16] text-white font-bold py-1.5 rounded-lg text-xs tracking-wide transition-all duration-300 active:scale-95 shadow-md md:hover:shadow-lg"
+                              onClick={() => addToCart(p)} 
+                              className="w-full bg-[#f68b1e] hover:bg-[#e07a16] text-white font-bold py-1.5 rounded-lg text-xs tracking-wide transition-all duration-300 active:scale-95 shadow-md hover:shadow-lg"
                             >
                               Add to Cart
                             </button>
@@ -666,7 +654,8 @@ export default function App() {
       {view === 'admin' && (
         <main className="max-w-7xl w-full mx-auto p-4 py-8">
           {!session ? (
-            <div className="max-w-sm mx-auto bg-white rounded-2xl border border-gray-200 p-6 mt-10 shadow-sm animate-in fade-in zoom-in duration-500">
+            /* SECURE SUPABASE AUTH LOGIN FORM */
+            <div className="max-w-sm mx-auto bg-white rounded-2xl border border-gray-200 p-6 mt-10 shadow-sm">
               <div className="text-center mb-5">
                 <h2 className="text-lg font-bold text-gray-900">Admin Portal Login</h2>
                 <p className="text-xs text-gray-500 mt-1">Authenticate using your Supabase user credentials.</p>
@@ -698,14 +687,15 @@ export default function App() {
                 <button 
                   type="submit" 
                   disabled={authLoading}
-                  className="w-full bg-zinc-950 active:bg-zinc-800 md:hover:bg-zinc-800 text-white text-xs font-bold py-2.5 rounded-xl uppercase tracking-wider transition-all active:scale-95"
+                  className="w-full bg-zinc-950 hover:bg-zinc-800 text-white text-xs font-bold py-2.5 rounded-xl uppercase tracking-wider transition-all"
                 >
                   {authLoading ? 'Authenticating...' : 'Sign In'}
                 </button>
               </form>
             </div>
           ) : (
-            <div className="animate-in fade-in duration-500">
+            <div>
+              {/* ADMIN HEADER TOOLBAR */}
               <div className="flex justify-between items-center mb-6 bg-white p-4 rounded-xl border border-gray-200 shadow-xs">
                 <div>
                   <p className="text-[10px] uppercase font-bold text-gray-400">Authenticated Session</p>
@@ -713,7 +703,7 @@ export default function App() {
                 </div>
                 <button 
                   onClick={handleAdminLogout} 
-                  className="px-3 py-1.5 text-xs font-bold bg-red-50 text-red-600 rounded-lg active:bg-red-100 md:hover:bg-red-100 flex items-center space-x-1.5 transition-colors active:scale-95"
+                  className="px-3 py-1.5 text-xs font-bold bg-red-50 text-red-600 rounded-lg hover:bg-red-100 flex items-center space-x-1.5 transition-colors"
                 >
                   <LogOut className="w-3.5 h-3.5" />
                   <span>Log Out</span>
@@ -722,6 +712,7 @@ export default function App() {
 
               <div className="grid md:grid-cols-3 gap-6">
                 
+                {/* Product Form (Add & Edit) */}
                 <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm h-fit">
                   <div className="flex justify-between items-center pb-2 border-b mb-4">
                     <h3 className="font-bold text-xs uppercase tracking-wide text-gray-700">
@@ -730,7 +721,7 @@ export default function App() {
                     {editingProduct && (
                       <button 
                         onClick={cancelEdit} 
-                        className="text-xs text-red-500 active:text-red-700 md:hover:text-red-700 font-bold active:underline md:hover:underline"
+                        className="text-xs text-red-500 hover:text-red-700 font-bold hover:underline"
                       >
                         Cancel Edit
                       </button>
@@ -743,7 +734,7 @@ export default function App() {
                       placeholder="Product Title" 
                       value={name} 
                       onChange={e => setName(e.target.value)} 
-                      className="w-full border p-2 text-xs rounded-lg bg-white text-black focus:outline-none focus:border-[#f68b1e]" 
+                      className="w-full border p-2 text-xs rounded-lg bg-white text-black" 
                       required 
                     />
                     <div className="grid grid-cols-2 gap-3">
@@ -752,7 +743,7 @@ export default function App() {
                         placeholder="Price (#)" 
                         value={price} 
                         onChange={e => setPrice(e.target.value)} 
-                        className="w-full border p-2 text-xs rounded-lg bg-white text-black focus:outline-none focus:border-[#f68b1e]" 
+                        className="w-full border p-2 text-xs rounded-lg bg-white text-black" 
                         required 
                       />
                       <input 
@@ -760,7 +751,7 @@ export default function App() {
                         placeholder="Stock Qty" 
                         value={quantity} 
                         onChange={e => setQuantity(e.target.value)} 
-                        className="w-full border p-2 text-xs rounded-lg bg-white text-black focus:outline-none focus:border-[#f68b1e]" 
+                        className="w-full border p-2 text-xs rounded-lg bg-white text-black" 
                         required 
                       />
                     </div>
@@ -768,7 +759,7 @@ export default function App() {
                       placeholder="Description" 
                       value={description} 
                       onChange={e => setDescription(e.target.value)} 
-                      className="w-full border p-2 text-xs rounded-lg h-14 bg-white text-black focus:outline-none focus:border-[#f68b1e]" 
+                      className="w-full border p-2 text-xs rounded-lg h-14 bg-white text-black" 
                     />
                     
                     <div className="space-y-1">
@@ -786,13 +777,14 @@ export default function App() {
                     <button 
                       type="submit" 
                       disabled={uploading} 
-                      className="w-full bg-[#f68b1e] text-white text-xs py-2 rounded-lg font-bold uppercase active:bg-[#e07a16] md:hover:bg-[#e07a16] transition-all active:scale-95"
+                      className="w-full bg-[#f68b1e] text-white text-xs py-2 rounded-lg font-bold uppercase hover:bg-[#e07a16] transition-all"
                     >
                       {uploading ? 'Processing...' : editingProduct ? 'Save Updates' : 'Publish Product'}
                     </button>
                   </form>
                 </div>
 
+                {/* Operational Catalog Controller */}
                 <div className="md:col-span-2 bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
                   <h3 className="font-bold text-xs uppercase tracking-wide text-gray-700 mb-4 pb-2 border-b">Operational Catalog Controller</h3>
                   <div className="overflow-x-auto">
@@ -807,7 +799,7 @@ export default function App() {
                       </thead>
                       <tbody className="divide-y divide-gray-100">
                         {products.map((p) => (
-                          <tr key={p.id} className={`md:hover:bg-gray-50/50 transition-colors ${editingProduct?.id === p.id ? 'bg-orange-50/50' : ''}`}>
+                          <tr key={p.id} className={`hover:bg-gray-50/50 ${editingProduct?.id === p.id ? 'bg-orange-50/50' : ''}`}>
                             <td className="p-2.5 flex items-center space-x-2">
                               <img src={p.image_url} alt="" className="w-8 h-8 object-cover rounded border" />
                               <span className="font-bold text-gray-900 line-clamp-1">{p.name}</span>
@@ -818,21 +810,21 @@ export default function App() {
                                 type="number" 
                                 value={p.quantity !== null ? p.quantity : (p.stock_status ? 10 : 0)} 
                                 onChange={(e) => handleUpdateStockVolume(p.id, e.target.value)}
-                                className="w-14 border text-center p-0.5 rounded font-bold text-xs bg-white text-black focus:outline-none focus:border-[#f68b1e]"
+                                className="w-14 border text-center p-0.5 rounded font-bold text-xs bg-white text-black"
                               />
                             </td>
                             <td className="p-2.5 text-center">
                               <div className="flex items-center justify-center space-x-3">
                                 <button 
                                   onClick={() => startEditProduct(p)} 
-                                  className="text-gray-400 active:text-green-600 md:hover:text-green-600 transition-colors active:scale-110"
+                                  className="text-gray-400 hover:text-green-600 transition-colors"
                                   title="Edit Product Info"
                                 >
                                   <Pencil className="w-4 h-4" />
                                 </button>
                                 <button 
                                   onClick={() => handleDeleteProduct(p.id)} 
-                                  className="text-gray-400 active:text-red-600 md:hover:text-red-600 transition-colors active:scale-110"
+                                  className="text-gray-400 hover:text-red-600 transition-colors"
                                   title="Delete Product"
                                 >
                                   <Trash2 className="w-4 h-4" />
@@ -856,7 +848,7 @@ export default function App() {
       {view === 'client' && cartCount > 0 && (
         <button 
           onClick={() => setIsCartOpen(true)} 
-          className="fixed bottom-6 right-6 z-50 md:hidden bg-black text-white p-4 rounded-full shadow-2xl flex items-center justify-center space-x-2 active:scale-90 md:hover:bg-zinc-900 transition-all border border-zinc-800"
+          className="fixed bottom-6 right-6 z-50 md:hidden bg-black text-white p-4 rounded-full shadow-2xl flex items-center justify-center space-x-2 active:scale-95 hover:bg-zinc-900 transition-all border border-zinc-800"
         >
           <ShoppingCart className="w-6 h-6 text-[#f68b1e]" />
           <span className="bg-[#f68b1e] text-white text-xs font-black px-2 py-0.5 rounded-full">
@@ -867,12 +859,12 @@ export default function App() {
 
       {/* CART SYSTEM */}
       {isCartOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-end z-50 animate-in fade-in duration-200">
-          <div className="w-full max-w-sm bg-white h-full p-5 flex flex-col justify-between shadow-2xl animate-in slide-in-from-right duration-300">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex justify-end z-50">
+          <div className="w-full max-w-sm bg-white h-full p-5 flex flex-col justify-between shadow-xl">
             <div>
               <div className="flex justify-between items-center border-b pb-3 mb-4">
                 <h3 className="font-bold text-gray-900 uppercase text-xs">Your Bag ({cartCount})</h3>
-                <button onClick={() => setIsCartOpen(false)} className="text-gray-400 text-xl font-light active:scale-75 transition-transform">&times;</button>
+                <button onClick={() => setIsCartOpen(false)} className="text-gray-400 text-xl font-light">&times;</button>
               </div>
               {cart.length === 0 ? (
                 <p className="text-center text-gray-400 text-xs py-10">Your cart is empty.</p>
@@ -888,9 +880,9 @@ export default function App() {
                         </div>
                       </div>
                       <div className="flex items-center space-x-1.5 bg-white border rounded p-0.5">
-                        <button onClick={() => changeQuantity(item, -1)} className="px-2 py-0.5 text-gray-500 font-bold active:bg-gray-100 rounded">-</button>
+                        <button onClick={() => changeQuantity(item, -1)} className="px-1.5 text-gray-500 font-bold">-</button>
                         <span className="text-xs font-bold px-1 text-black">{item.quantity}</span>
-                        <button onClick={() => changeQuantity(item, 1)} className="px-2 py-0.5 text-gray-500 font-bold active:bg-gray-100 rounded">+</button>
+                        <button onClick={() => changeQuantity(item, 1)} className="px-1.5 text-gray-500 font-bold">+</button>
                       </div>
                     </div>
                   ))}
@@ -903,7 +895,7 @@ export default function App() {
                   <span className="text-gray-400 text-xs uppercase">Total:</span>
                   <span className="text-lg font-black text-black">#{cartTotal.toLocaleString()}</span>
                 </div>
-                <button onClick={handleWhatsAppCheckout} className="w-full bg-green-600 active:bg-green-700 md:hover:bg-green-700 text-white py-3 rounded-xl font-bold text-xs uppercase text-center block transition-all active:scale-[0.98] shadow-md">
+                <button onClick={handleWhatsAppCheckout} className="w-full bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-xl font-bold text-xs uppercase text-center block">
                   Order via WhatsApp
                 </button>
               </div>
