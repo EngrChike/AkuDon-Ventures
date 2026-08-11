@@ -123,7 +123,7 @@ export default function Storefront() {
     // 3. Construct WhatsApp Message and Redirect
     let msg = '✨ *AKUDON VENTURE - NEW ORDER* ✨\n------------------------------------------\n\n';
     cart.forEach((item, idx) => {
-      msg += `🛍️ *${idx + 1}. ${item.name}*\n   Price: #${item.price.toLocaleString()}\n   Qty: ${item.quantity}\n------------------------------------------\n`;
+      msg += `🛍️ *${idx + 1}. ${item.name}*\n  Price: #${item.price.toLocaleString()}\n  Qty: ${item.quantity}\n------------------------------------------\n`;
     });
     msg += `\n🎯 *GRAND TOTAL:* #${cartTotal.toLocaleString()}\n\nConfirming availability for immediate dispatch!`;
     
@@ -142,6 +142,23 @@ export default function Storefront() {
 
   return (
     <div className="min-h-screen bg-[#f5f5f7] text-gray-900 font-sans antialiased relative">
+      
+      {/* RESTORED: MOBILE & LAPTOP ANIMATION STYLES */}
+      <style>{`
+        @keyframes mobileBreathe {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.04); }
+        }
+        .mobile-alive-img {
+          animation: mobileBreathe 8s infinite ease-in-out;
+        }
+        @media (min-width: 768px) {
+          .mobile-alive-img {
+            animation: none;
+          }
+        }
+      `}</style>
+
       <header className="bg-white text-black sticky top-0 z-40 shadow-sm border-b border-gray-100 px-4 py-3">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center space-x-2.5 cursor-pointer shrink-0 group select-none">
@@ -211,40 +228,77 @@ export default function Storefront() {
             const isOutOfStock = p.quantity !== null ? p.quantity <= 0 : !p.stock_status;
 
             return (
-              <div key={p.id} className="bg-white rounded-xl border border-gray-200/60 overflow-hidden flex flex-col justify-between relative">
+              <div 
+                key={p.id} 
+                className="bg-white rounded-xl border border-gray-200/60 overflow-hidden flex flex-col justify-between group md:hover:shadow-2xl md:hover:-translate-y-1.5 active:scale-[0.98] transition-all duration-300 relative cursor-pointer"
+              >
+                {/* Heart Icon */}
+                <button className="absolute top-2 right-2 z-20 p-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-sm text-gray-400 md:hover:text-red-500 active:text-red-500 active:scale-110 md:hover:scale-110 transition-all duration-300">
+                  <Heart className="w-3.5 h-3.5" />
+                </button>
+
                 <div className="relative bg-gray-50 aspect-[4/5] w-full overflow-hidden flex items-center justify-center border-b border-gray-100">
-                  <img src={p.image_url} alt={p.name} className="object-cover w-full h-full" />
-                  <div className="absolute bottom-2 left-2 z-20">
+                  
+                  {/* Image scaling & mobile breathing animation restored */}
+                  <img 
+                    src={p.image_url} 
+                    alt={p.name} 
+                    className="object-cover w-full h-full transition-transform duration-700 ease-out md:group-hover:scale-110 mobile-alive-img" 
+                  />
+                  
+                  {/* Gradient overlay for luxury depth on desktop hover */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/5 to-transparent opacity-80 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-700 z-10 pointer-events-none"></div>
+
+                  <div className="absolute bottom-2 left-2 z-20 transition-transform duration-500 md:group-hover:-translate-y-1">
                     <span className="bg-[#f68b1e] text-white font-bold text-[10px] px-2 py-0.5 rounded shadow-lg">
                       {p.quantity > 0 ? `${p.quantity} Items Left` : 'Out of Stock'}
                     </span>
                   </div>
+
                   {isOutOfStock && (
                     <div className="absolute inset-0 bg-white/40 backdrop-blur-[2px] flex items-center justify-center z-20">
-                      <span className="bg-zinc-900 text-white font-bold text-[10px] uppercase tracking-widest px-3 py-1.5 rounded">SOLD OUT</span>
+                      <span className="bg-zinc-900 text-white font-bold text-[10px] uppercase tracking-widest px-3 py-1.5 rounded shadow-xl">SOLD OUT</span>
                     </div>
                   )}
                 </div>
 
-                <div className="p-3 flex-1 flex flex-col justify-between bg-white z-20">
+                <div className="p-3 flex-1 flex flex-col justify-between bg-white relative z-20">
                   <div>
+                    <div className="flex items-center space-x-1 mb-1">
+                      <span className="font-extrabold text-xs text-zinc-900 md:group-hover:text-[#f68b1e] transition-colors duration-300">AKUDON</span>
+                      <span className="text-blue-500 text-[10px] font-bold">✔</span>
+                    </div>
                     <h3 className="text-xs text-gray-600 line-clamp-2 min-h-[2rem] leading-tight font-medium">
                       {p.name} {p.description && `• ${p.description}`}
                     </h3>
+                    
+                    {/* Rating Stars */}
+                    <div className="flex items-center space-x-1 mt-1.5">
+                      <div className="flex text-amber-400">
+                        {[...Array(5)].map((_, i) => <Star key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />)}
+                      </div>
+                      <span className="text-[10px] text-gray-400 font-medium">(4.9)</span>
+                    </div>
                   </div>
+
                   <div className="mt-3">
                     <p className="text-sm font-black text-[#f68b1e] tracking-tight">#{p.price.toLocaleString()}</p>
                     <div className="mt-2.5">
                       {isOutOfStock ? (
                         <button disabled className="w-full bg-gray-100 text-gray-400 text-[11px] font-bold py-1.5 rounded-lg cursor-not-allowed">Out of Stock</button>
                       ) : itemQtyInCart > 0 ? (
-                        <div className="flex items-center justify-between border border-[#f68b1e] rounded-lg h-7">
-                          <button onClick={() => changeQuantity(p, -1)} className="text-[#f68b1e] w-8 h-full font-bold">-</button>
-                          <span className="w-full text-center text-xs font-black">{itemQtyInCart}</span>
-                          <button onClick={() => changeQuantity(p, 1)} className="text-[#f68b1e] w-8 h-full font-bold">+</button>
+                        <div className="flex items-center justify-between border border-[#f68b1e] rounded-lg overflow-hidden bg-white h-7 shadow-sm">
+                          <button onClick={(e) => { e.stopPropagation(); changeQuantity(p, -1); }} className="bg-[#f68b1e]/5 text-[#f68b1e] active:bg-[#f68b1e]/20 md:hover:bg-[#f68b1e]/10 transition-colors w-8 h-full flex items-center justify-center font-bold">-</button>
+                          <span className="w-full text-center text-xs font-black text-black">{itemQtyInCart}</span>
+                          <button onClick={(e) => { e.stopPropagation(); changeQuantity(p, 1); }} className="bg-[#f68b1e]/5 text-[#f68b1e] active:bg-[#f68b1e]/20 md:hover:bg-[#f68b1e]/10 transition-colors w-8 h-full flex items-center justify-center font-bold">+</button>
                         </div>
                       ) : (
-                        <button onClick={() => addToCart(p)} className="w-full bg-[#f68b1e] text-white font-bold py-1.5 rounded-lg text-xs">Add to Cart</button>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); addToCart(p); }} 
+                          className="w-full bg-[#f68b1e] md:hover:bg-[#e07a16] text-white font-bold py-1.5 rounded-lg text-xs tracking-wide transition-all duration-300 active:scale-95 shadow-md md:hover:shadow-lg"
+                        >
+                          Add to Cart
+                        </button>
                       )}
                     </div>
                   </div>
@@ -292,7 +346,7 @@ export default function Storefront() {
                 <button 
                   onClick={handleWhatsAppCheckout} 
                   disabled={isCheckingOut}
-                  className="w-full bg-green-600 text-white py-3 rounded-xl font-bold text-xs uppercase text-center"
+                  className="w-full bg-green-600 md:hover:bg-green-700 transition-colors text-white py-3 rounded-xl font-bold text-xs uppercase text-center shadow-lg"
                 >
                   {isCheckingOut ? 'Processing...' : 'Order via WhatsApp'}
                 </button>
