@@ -972,9 +972,9 @@ export default function SalesLedger({ products, customers, fetchProducts, fetchC
               {/* Header */}
               <div className="flex justify-between items-start border-b border-gray-100 pb-4">
                 <div>
-                  <h1 className="text-xl font-black tracking-wider uppercase leading-tight">CHIKE GLOBAL</h1>
-                  <p className="text-[11px] font-semibold mt-1 leading-tight text-gray-600">COCOVICO MARCHE ANGRE COCODY ABIDJAN</p>
-                  <p className="text-[11px] font-semibold leading-tight text-gray-600">WhatsApp: +2250100130109</p>
+                  <h1 className="text-xl font-black tracking-wider uppercase leading-tight">AKUDON VENTURES</h1>
+                  <p className="text-[11px] font-semibold mt-1 leading-tight text-gray-600">BACK OF ANGLICAN CHURCH UMUEKIA UMUOMA NEKEDE </p>
+                  <p className="text-[11px] font-semibold leading-tight text-gray-600">WhatsApp: +2349032690028</p>
                 </div>
                 <div className="text-right flex flex-col items-end">
                   {/* "CG" LOGO BLOCK */}
@@ -1053,7 +1053,7 @@ export default function SalesLedger({ products, customers, fetchProducts, fetchC
 
               {/* Footer Note */}
               <div className="text-center pt-4 border-t border-gray-200 text-[11px] text-gray-500 font-medium">
-                Thank you for your business! • CHIKE GLOBAL
+                Thank you for your business! • AKUDON VENTURES
               </div>
 
             </div>

@@ -18,8 +18,8 @@ export default function ClientApp() {
   const topOfGridRef = useRef(null);
 
   // OFFICIAL LINKS & HANDLES
-  const WHATSAPP_NUMBER = '2250100130109';
-  const FACEBOOK_URL = 'https://facebook.com/profile.php?id=61590626370497';
+  const WHATSAPP_NUMBER = '+2349032690028';
+  const FACEBOOK_URL = 'https://www.facebook.com/akokwu.laetitia.7';
   const TIKTOK_URL = 'https://tiktok.com/@your-profile';
 
   // Helper to randomize array (Fisher-Yates shuffle)
@@ -145,7 +145,7 @@ export default function ClientApp() {
       });
     }
 
-    let msg = `✨ *CHIKE GLOBAL - NEW ORDER (${storeBranch})* ✨\n------------------------------------------\n\n`;
+    let msg = `✨ *AKUDON VENTURES - NEW ORDER (${storeBranch})* ✨\n------------------------------------------\n\n`;
     cart.forEach((item, idx) => {
       msg += `🛍 *${idx + 1}. ${item.name}*\n  Price: ${item.price.toLocaleString()} FCFA\n  Qty: ${item.quantity}\n------------------------------------------\n`;
     });
@@ -206,8 +206,8 @@ export default function ClientApp() {
              </svg>
             </div>
             <div className="flex flex-col justify-center">
-              <span className="font-black text-base sm:text-xl tracking-wider uppercase text-zinc-900 leading-none group-hover:text-amber-600 transition-colors">CHIKE  </span>
-              <span className="text-[10px] sm:text-[11px] font-bold text-amber-500 tracking-[0.25em] uppercase leading-tight mt-0.5">GLOBAL</span>
+              <span className="font-black text-base sm:text-xl tracking-wider uppercase text-zinc-900 leading-none group-hover:text-amber-600 transition-colors">AKUDON </span>
+              <span className="text-[10px] sm:text-[11px] font-bold text-amber-500 tracking-[0.25em] uppercase leading-tight mt-0.5">VENTURES</span>
             </div>
           </div>
 
@@ -237,7 +237,7 @@ export default function ClientApp() {
                 <MapPin className="w-3 h-3" /> Branch: {storeBranch}
               </span>
             </div>
-            <h1 className="text-xl md:text-3xl font-black tracking-tight">CHIKE GLOBAL Collection</h1>
+            <h1 className="text-xl md:text-3xl font-black tracking-tight">AKUDON VENTURES Collection</h1>
             <p className="text-zinc-400 text-xs mt-1">Place your order instantly via WhatsApp for our {storeBranch} branch.</p>
           </div>
           <div className="bg-white/5 px-4 py-2.5 rounded-xl border border-white/10 mt-4 md:mt-0">
@@ -301,7 +301,7 @@ export default function ClientApp() {
                     <div className="p-3 flex-1 flex flex-col justify-between bg-white">
                       <div>
                         <div className="flex items-center space-x-1 mb-1">
-                          <span className="font-extrabold text-xs text-zinc-900 group-hover:text-[#f68b1e] transition-colors">Donchike</span>
+                          <span className="font-extrabold text-xs text-zinc-900 group-hover:text-[#f68b1e] transition-colors">AKUDON</span>
                           <span className="text-blue-500 text-[10px] font-bold">✔</span>
                         </div>
                         <h3 className="text-sm md:text-base text-black line-clamp-2 min-h-[2.5rem] leading-tight font-extrabold">
