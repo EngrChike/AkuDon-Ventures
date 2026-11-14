@@ -44,10 +44,10 @@ export default function TransferHistoryModal({ isOpen, onClose, transferLogs = [
             </div>
             <div>
               <h3 className="text-base font-black text-gray-900 uppercase">
-                Historique des Transferts & Reçus
+                Transfer History & Receipts
               </h3>
               <p className="text-xs text-gray-500">
-                Traçabilité administrative des dispatchings QG vers les succursales
+                Administrative traceability of HQ dispatches to branches
               </p>
             </div>
           </div>
@@ -64,7 +64,7 @@ export default function TransferHistoryModal({ isOpen, onClose, transferLogs = [
           <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-3" />
           <input 
             type="text" 
-            placeholder="Rechercher par référence (ex: TRF-...) ou auteur..."
+            placeholder="Search by reference (e.g., TRF-...) or author..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium outline-none focus:ring-2 focus:ring-[#0f172a]"
@@ -78,15 +78,15 @@ export default function TransferHistoryModal({ isOpen, onClose, transferLogs = [
             <div className="bg-amber-50/30 p-6 rounded-2xl border border-amber-200/60 space-y-5 print:p-0">
               <div className="flex justify-between items-start border-b pb-4 border-amber-200">
                 <div>
-                  <h4 className="font-black text-sm text-gray-900 uppercase">Bordereau de Transfert de Stock</h4>
-                  <p className="text-xs text-amber-900 font-mono font-bold mt-1">Réf: {selectedReceipt.transfer_ref}</p>
+                  <h4 className="font-black text-sm text-gray-900 uppercase">Stock Transfer Slip</h4>
+                  <p className="text-xs text-amber-900 font-mono font-bold mt-1">Ref: {selectedReceipt.transfer_ref}</p>
                 </div>
                 <div className="text-right text-xs text-gray-500 space-y-1">
                   <p className="flex items-center justify-end gap-1">
                     <Calendar className="w-3.5 h-3.5" /> 
-                    {selectedReceipt.created_at ? new Date(selectedReceipt.created_at).toLocaleString('fr-FR') : 'Date N/A'}
+                    {selectedReceipt.created_at ? new Date(selectedReceipt.created_at).toLocaleString() : 'Date N/A'}
                   </p>
-                  <p className="font-medium">Émis par: <strong>{selectedReceipt.created_by || 'Admin'}</strong></p>
+                  <p className="font-medium">Issued by: <strong>{selectedReceipt.created_by || 'Admin'}</strong></p>
                 </div>
               </div>
 
@@ -94,10 +94,10 @@ export default function TransferHistoryModal({ isOpen, onClose, transferLogs = [
                 <table className="w-full text-left text-xs">
                   <thead className="bg-amber-100/50 font-bold text-gray-700 border-b border-amber-200">
                     <tr>
-                      <th className="p-3">Produit</th>
-                      <th className="p-3">Lot</th>
-                      <th className="p-3 text-center">Quantité</th>
-                      <th className="p-3">Succursale Cible</th>
+                      <th className="p-3">Product</th>
+                      <th className="p-3">Batch</th>
+                      <th className="p-3 text-center">Quantity</th>
+                      <th className="p-3">Target Branch</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -106,7 +106,7 @@ export default function TransferHistoryModal({ isOpen, onClose, transferLogs = [
                         <td className="p-3 font-bold text-gray-900">{item.product_name || item.name}</td>
                         <td className="p-3 font-mono text-gray-500 uppercase">{item.batch_reference || 'N/A'}</td>
                         <td className="p-3 text-center font-black text-indigo-700">{item.qty || item.quantity} unit(s)</td>
-                        <td className="p-3 font-bold text-emerald-800">🏪 {item.target_branch_name || 'Succursale'}</td>
+                        <td className="p-3 font-bold text-emerald-800">🏪 {item.target_branch_name || 'Branch'}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -118,13 +118,13 @@ export default function TransferHistoryModal({ isOpen, onClose, transferLogs = [
                   onClick={() => setSelectedReceipt(null)}
                   className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-xl"
                 >
-                  ← Retour au tableau
+                  ← Back to table
                 </button>
                 <button 
                   onClick={handlePrint}
                   className="px-4 py-2 bg-zinc-900 text-white font-bold text-xs rounded-xl flex items-center gap-2 shadow-sm"
                 >
-                  <Printer className="w-4 h-4 text-amber-400" /> Imprimer le Reçu
+                  <Printer className="w-4 h-4 text-amber-400" /> Print Receipt
                 </button>
               </div>
             </div>
@@ -133,17 +133,17 @@ export default function TransferHistoryModal({ isOpen, onClose, transferLogs = [
             filteredLogs.length === 0 ? (
               <div className="text-center py-12 text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200">
                 <Building2 className="w-10 h-10 mx-auto text-gray-300 mb-2" />
-                <p className="font-bold text-sm">Aucun bordereau de transfert trouvé</p>
+                <p className="font-bold text-sm">No transfer slips found</p>
               </div>
             ) : (
               <div className="border border-gray-200 rounded-xl overflow-hidden">
                 <table className="w-full text-left text-xs">
                   <thead className="bg-gray-50 border-b border-gray-200 font-bold text-gray-600">
                     <tr>
-                      <th className="p-3">Réf Transfert</th>
-                      <th className="p-3">Date & Heure</th>
-                      <th className="p-3">Auteur</th>
-                      <th className="p-3 text-center">Volume Total</th>
+                      <th className="p-3">Transfer Ref</th>
+                      <th className="p-3">Date & Time</th>
+                      <th className="p-3">Author</th>
+                      <th className="p-3 text-center">Total Volume</th>
                       <th className="p-3 text-center">Action</th>
                     </tr>
                   </thead>
@@ -155,16 +155,16 @@ export default function TransferHistoryModal({ isOpen, onClose, transferLogs = [
                         <tr key={log.id || log.transfer_ref} className="hover:bg-gray-50">
                           <td className="p-3 font-mono font-bold text-indigo-700">{log.transfer_ref}</td>
                           <td className="p-3 text-gray-500">
-                            {log.created_at ? new Date(log.created_at).toLocaleString('fr-FR') : 'Date N/A'}
+                            {log.created_at ? new Date(log.created_at).toLocaleString() : 'Date N/A'}
                           </td>
                           <td className="p-3 font-semibold text-gray-800">{log.created_by || 'Admin'}</td>
-                          <td className="p-3 text-center font-black text-gray-900">{totalQty} article(s)</td>
+                          <td className="p-3 text-center font-black text-gray-900">{totalQty} item(s)</td>
                           <td className="p-3 text-center">
                             <button 
                               onClick={() => setSelectedReceipt(log)}
                               className="px-3 py-1 bg-zinc-800 hover:bg-zinc-900 text-amber-400 font-bold rounded-lg text-[11px]"
                             >
-                              Voir le Reçu
+                              View Receipt
                             </button>
                           </td>
                         </tr>

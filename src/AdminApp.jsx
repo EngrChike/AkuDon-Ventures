@@ -140,7 +140,7 @@ export default function AdminApp({ currentUser, supabase }) {
         setLiveStoreBranch(data.active_branch || '');
       }
     } catch (err) {
-      console.log("Paramètres de la boutique non configurés (normal au premier lancement).");
+      console.log("Store settings not configured (normal on first launch).");
     }
   };
 
@@ -154,10 +154,10 @@ export default function AdminApp({ currentUser, supabase }) {
       if (error) throw error;
       setLiveStoreBranch(newBranchId);
       const branchObj = branches.find(b => b.id === newBranchId);
-      const branchDisplayName = branchObj ? branchObj.name : 'Siège Principal';
-      alert(`Succès ! L'application client affiche maintenant les stocks de : ${branchDisplayName}`);
+      const branchDisplayName = branchObj ? branchObj.name : 'Main Headquarters';
+      alert(`Success! The client app now displays stock from: ${branchDisplayName}`);
     } catch (err) {
-      alert(`Erreur lors de la mise à jour : ${err.message}`);
+      alert(`Error updating live branch: ${err.message}`);
     }
   };
 
@@ -165,14 +165,14 @@ export default function AdminApp({ currentUser, supabase }) {
     try {
       const { data, error } = await supabase.from('branches').select('*').order('created_at', { ascending: true });
       if (!error && data) setBranches(data);
-    } catch (err) { console.error("Erreur branches:", err); }
+    } catch (err) { console.error("Error branches:", err); }
   };
 
   const fetchProducts = async () => {
     try {
       const { data, error } = await supabase.from('products').select('*').order('created_at', { ascending: false });
       if (!error && data) setProducts(data);
-    } catch (err) { console.error("Erreur produits:", err); }
+    } catch (err) { console.error("Error products:", err); }
   };
 
   // --- BULLETPROOF CUSTOMER & SALES FETCHING ---
@@ -210,7 +210,7 @@ export default function AdminApp({ currentUser, supabase }) {
       if (orphanSales.length > 0) {
         rawCustomers.push({
           id: 'virtual_global_client',
-          name: 'Ventes Directes Client',
+          name: 'Direct Walk-in Sales',
           phone: '',
           branch_id: orphanSales[0].branch_id || null,
           total_debt: 0,
@@ -271,7 +271,7 @@ export default function AdminApp({ currentUser, supabase }) {
 
       setCustomers(formatted);
     } catch (err) { 
-      console.error("Erreur clients:", err.message); 
+      console.error("Error customers:", err.message); 
     }
   };
 
@@ -279,7 +279,7 @@ export default function AdminApp({ currentUser, supabase }) {
     try {
       const { data, error } = await supabase.from('staff').select('*').order('created_at', { ascending: false });
       if (!error && data) setStaffList(data);
-    } catch (err) { console.error("Erreur personnel:", err); }
+    } catch (err) { console.error("Error staff:", err); }
   };
 
   const fetchTransferLogs = async () => {
@@ -322,7 +322,7 @@ export default function AdminApp({ currentUser, supabase }) {
 
   const formatMoney = (amount) => {
     if (!showFinancials) return '******';
-    return `${(amount || 0).toLocaleString()} FCFA`;
+    return `#${(amount || 0).toLocaleString()}`;
   };
 
   const handleSaveBranch = async (e) => {
@@ -332,30 +332,30 @@ export default function AdminApp({ currentUser, supabase }) {
       const payload = { name: branchName.trim(), location: branchLocation.trim() };
       if (editingBranch) {
         await supabase.from('branches').update(payload).eq('id', editingBranch.id);
-        alert('Succursale mise à jour !');
+        alert('Branch updated successfully!');
       } else {
         await supabase.from('branches').insert([payload]);
-        alert('Nouvelle succursale créée !');
+        alert('New branch created successfully!');
       }
       setBranchName(''); setBranchLocation(''); setEditingBranch(null);
       fetchBranchesFromSupabase();
-    } catch (err) { alert(`Erreur: ${err.message}`); }
+    } catch (err) { alert(`Error: ${err.message}`); }
   };
 
   const handleDeleteBranch = async (branchId) => {
     if (!(await verifyAdminPinBeforeAction())) return;
-    if (!window.confirm('Êtes-vous sûr de vouloir supprimer cette succursale ? Cette action est irréversible.')) return;
+    if (!window.confirm('Are you sure you want to delete this branch? This action is irreversible.')) return;
     try {
       const { error } = await supabase.from('branches').delete().eq('id', branchId);
       if (error) throw error;
-      alert('Succursale supprimée !');
+      alert('Branch deleted successfully!');
       
       if (viewingBranch === branchId) setViewingBranch('');
       if (storefrontBranch === branchId) setStorefrontBranch('');
       
       fetchBranchesFromSupabase();
     } catch (err) {
-      alert(`Erreur lors de la suppression: ${err.message}`);
+      alert(`Error deleting branch: ${err.message}`);
     }
   };
 
@@ -365,10 +365,10 @@ export default function AdminApp({ currentUser, supabase }) {
       const targetBranch = newBranchId || null;
       const { error } = await supabase.from('staff').update({ branch_id: targetBranch }).eq('id', staffId);
       if (error) throw error;
-      alert('Personnel réassigné avec succès !');
+      alert('Staff reassigned successfully!');
       fetchStaffFromSupabase();
     } catch (err) {
-      alert(`Erreur lors de la réassignation: ${err.message}`);
+      alert(`Error reassigning staff: ${err.message}`);
     }
   };
 
@@ -397,14 +397,14 @@ export default function AdminApp({ currentUser, supabase }) {
       };
       if (editingStaff) {
         await supabase.from('staff').update(payload).eq('id', editingStaff.id);
-        alert('Personnel mis à jour !');
+        alert('Staff member updated!');
       } else {
         await supabase.from('staff').insert([payload]);
-        alert('Nouveau membre ajouté !');
+        alert('New staff member added!');
       }
       setStaffName(''); setStaffPin(''); setStaffRole('staff'); setStaffBranch(''); setEditingStaff(null);
       fetchStaffFromSupabase();
-    } catch (err) { alert(`Erreur: ${err.message}`); }
+    } catch (err) { alert(`Error: ${err.message}`); }
   };
 
   const handleToggleStaffStatus = async (id, currentStatus) => {
@@ -413,9 +413,9 @@ export default function AdminApp({ currentUser, supabase }) {
       const { error } = await supabase.from('staff').update({ is_active: !currentStatus }).eq('id', id);
       if (error) throw error;
       fetchStaffFromSupabase(); 
-      alert(currentStatus ? 'Personnel désactivé !' : 'Personnel réactivé !');
+      alert(currentStatus ? 'Staff account deactivated!' : 'Staff account reactivated!');
     } catch (err) {
-      alert(`Erreur: ${err.message}`);
+      alert(`Error: ${err.message}`);
     }
   };
 
@@ -473,8 +473,8 @@ export default function AdminApp({ currentUser, supabase }) {
 
       handleCancelEditProduct();
       await fetchProducts();
-      alert('Inventaire enregistré avec succès !');
-    } catch (err) { alert(`Erreur: ${err.message}`); } finally { setUploading(false); }
+      alert('Inventory saved successfully!');
+    } catch (err) { alert(`Error: ${err.message}`); } finally { setUploading(false); }
   };
 
   const handleOpenBatchTransfer = () => {
@@ -522,21 +522,21 @@ export default function AdminApp({ currentUser, supabase }) {
   const handleProceedToBatchReview = () => {
     const activeItems = Object.values(selectedBatchItems).filter(item => item.selected);
     if (activeItems.length === 0) {
-      setBatchTransferError("Veuillez sélectionner au moins un produit à transférer.");
+      setBatchTransferError("Please select at least one product to transfer.");
       return;
     }
 
     for (const item of activeItems) {
       if (!item.targetBranch) {
-        setBatchTransferError("Veuillez assigner une succursale de destination pour tous les produits sélectionnés.");
+        setBatchTransferError("Please assign a target branch for all selected products.");
         return;
       }
       if (item.qty <= 0) {
-        setBatchTransferError(`La quantité pour "${item.product.name}" doit être supérieure à 0.`);
+        setBatchTransferError(`The quantity for "${item.product.name}" must be greater than 0.`);
         return;
       }
       if (item.qty > item.product.quantity) {
-        setBatchTransferError(`Quantité insuffisante au QG pour "${item.product.name}" (Max: ${item.product.quantity}).`);
+        setBatchTransferError(`Insufficient HQ stock for "${item.product.name}" (Max: ${item.product.quantity}).`);
         return;
       }
     }
@@ -552,7 +552,7 @@ export default function AdminApp({ currentUser, supabase }) {
     try {
       const activeItems = Object.values(selectedBatchItems).filter(item => item.selected);
       if (activeItems.length === 0) {
-        setBatchTransferError("Aucun produit sélectionné pour le transfert.");
+        setBatchTransferError("No products selected for transfer.");
         setBatchTransferLoading(false);
         return;
       }
@@ -560,13 +560,13 @@ export default function AdminApp({ currentUser, supabase }) {
       for (const item of activeItems) {
         const transferQty = Number(item.qty) || 0;
         if (!item.targetBranch) {
-          throw new Error(`Veuillez sélectionner une succursale de destination pour "${item.product.name}".`);
+          throw new Error(`Please select a target branch for "${item.product.name}".`);
         }
         if (transferQty <= 0) {
-          throw new Error(`La quantité à transférer pour "${item.product.name}" doit être supérieure à 0.`);
+          throw new Error(`The transfer quantity for "${item.product.name}" must be greater than 0.`);
         }
         if (transferQty > item.product.quantity) {
-          throw new Error(`Quantité insuffisante au QG pour "${item.product.name}" (Stock dispo: ${item.product.quantity}).`);
+          throw new Error(`Insufficient HQ stock for "${item.product.name}" (Available: ${item.product.quantity}).`);
         }
       }
 
@@ -619,7 +619,7 @@ export default function AdminApp({ currentUser, supabase }) {
           cost_price: product.cost_price || 0,
           price: product.price || 0,
           target_branch_id: targetBranch,
-          target_branch_name: targetBranchObj?.name || 'Succursale'
+          target_branch_name: targetBranchObj?.name || 'Branch'
         });
       }
 
@@ -644,7 +644,7 @@ export default function AdminApp({ currentUser, supabase }) {
           setTransferLogs(prev => prev.map(l => l.transfer_ref === transferRef ? insertedData[0] : l));
         }
       } catch (logErr) {
-        console.warn("Table stock_transfers non encore disponible en BD:", logErr);
+        console.warn("Table stock_transfers not yet available in DB:", logErr);
       }
 
       setBatchTransferLoading(false);
@@ -653,10 +653,10 @@ export default function AdminApp({ currentUser, supabase }) {
       await fetchProducts();
       await fetchTransferLogs();
 
-      alert(`Transfert groupé effectué avec succès ! Réf: ${transferRef}`);
+      alert(`Batch transfer completed successfully! Ref: ${transferRef}`);
     } catch (err) {
       console.error("Batch transfer error:", err);
-      setBatchTransferError(`Erreur lors du transfert: ${err.message}`);
+      setBatchTransferError(`Error during transfer: ${err.message}`);
       setBatchTransferLoading(false);
     }
   };
@@ -679,7 +679,7 @@ export default function AdminApp({ currentUser, supabase }) {
   };
 
   const handleArchiveProduct = async (id, archiveState = true) => {
-    if (!window.confirm(archiveState ? 'Archiver ce produit ?' : 'Restaurer ce produit ?')) return;
+    if (!window.confirm(archiveState ? 'Archive this product?' : 'Restore this product?')) return;
     await supabase.from('products').update({ is_archived: archiveState }).eq('id', id);
     setProducts(prev => prev.map(p => String(p.id) === String(id) ? { ...p, is_archived: archiveState } : p));
   };
@@ -888,13 +888,13 @@ export default function AdminApp({ currentUser, supabase }) {
                           : 'bg-rose-600 text-white animate-pulse ring-2 ring-rose-300')
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
-                  title={hasLowStock ? `${lowStockProducts.length} produit(s) en stock critique (≤ 3)` : 'Stock normal'}
+                  title={hasLowStock ? `${lowStockProducts.length} product(s) in critical stock (≤ 3)` : 'Normal stock'}
                 >
                   <ShieldAlert className={`w-4 h-4 ${hasLowStock ? 'text-amber-200 animate-bounce' : 'text-slate-400'}`} />
                   <span>
                     {showLowStockOnly 
-                      ? `Stock Bas: ${lowStockProducts.length}` 
-                      : `Critique: ${lowStockProducts.length}`}
+                      ? `Low Stock: ${lowStockProducts.length}` 
+                      : `Critical: ${lowStockProducts.length}`}
                   </span>
                 </button>
 
@@ -931,7 +931,7 @@ export default function AdminApp({ currentUser, supabase }) {
           <div className="space-y-3">
             <div className="flex justify-between items-center px-1">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-slate-400" /> Performance Financière & Tableaux de Bord
+                <ShieldCheck className="w-4 h-4 text-slate-400" /> Financial Performance & Dashboards
               </span>
               <button
                 onClick={handleToggleFinancialVisibility}
@@ -940,12 +940,12 @@ export default function AdminApp({ currentUser, supabase }) {
                 {showFinancials ? (
                   <>
                     <EyeOff className="w-4 h-4 text-rose-500" />
-                    <span>Masquer les chiffres</span>
+                    <span>Hide figures</span>
                   </>
                 ) : (
                   <>
                     <Eye className="w-4 h-4 text-emerald-600" />
-                    <span>Afficher les chiffres (PIN requis)</span>
+                    <span>Show figures (PIN required)</span>
                   </>
                 )}
               </button>
@@ -1066,21 +1066,21 @@ export default function AdminApp({ currentUser, supabase }) {
                 <div>
                   <h3 className="text-base sm:text-lg font-black text-emerald-950 flex items-center gap-2.5">
                     <Globe className="w-5 h-5 text-emerald-600" />
-                    Configuration de la Boutique Publique
+                    Public Storefront Configuration
                   </h3>
                   <p className="text-xs sm:text-sm text-slate-600 mt-1">
-                    Sélectionnez la succursale dont le stock sera <span className="font-bold text-emerald-700">actuellement visible</span> par vos clients sur le lien public. (PIN Admin requis)
+                    Select the branch whose stock will be <span className="font-bold text-emerald-700">currently visible</span> to your customers on the public link. (Admin PIN required)
                   </p>
                 </div>
                 <div className="flex items-center gap-3 bg-white p-2.5 rounded-xl border border-slate-200 shadow-sm min-w-[240px]">
                    <div className="flex flex-col w-full">
-                     <span className="text-[10px] uppercase font-black text-slate-400">Succursale Active en Ligne</span>
+                     <span className="text-[10px] uppercase font-black text-slate-400">Active Online Branch</span>
                      <select 
                        value={liveStoreBranch}
                        onChange={(e) => handleUpdateLiveBranch(e.target.value)}
                        className="text-sm font-bold text-slate-900 bg-transparent outline-none cursor-pointer w-full mt-0.5"
                      >
-                       <option value="">Siège Principal (HQ)</option>
+                       <option value="">Main Headquarters (HQ)</option>
                        {branches.map(b => (
                          <option key={b.id} value={b.id}>{b.name}</option>
                        ))}
@@ -1095,10 +1095,10 @@ export default function AdminApp({ currentUser, supabase }) {
                 <div>
                   <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
                     <Sparkles className="w-5 h-5 text-indigo-600" />
-                    Aperçu du Catalogue de la Vitrine Publique
+                    Public Storefront Catalogue Preview
                   </h3>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    Visualisez les articles actuellement affichés aux clients pour la succursale sélectionnée.
+                    View items currently displayed to customers for the selected branch.
                   </p>
                 </div>
                 
@@ -1108,9 +1108,9 @@ export default function AdminApp({ currentUser, supabase }) {
                     onChange={(e) => setStorefrontBranch(e.target.value)}
                     className="px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm font-semibold text-slate-800 outline-none cursor-pointer w-full sm:w-auto"
                   >
-                    <option value="">Aperçu : Siège Principal (HQ)</option>
+                    <option value="">Preview: Main Headquarters (HQ)</option>
                     {branches.map(b => (
-                      <option key={b.id} value={b.id}>Aperçu : {b.name}</option>
+                      <option key={b.id} value={b.id}>Preview: {b.name}</option>
                     ))}
                   </select>
 
@@ -1118,11 +1118,11 @@ export default function AdminApp({ currentUser, supabase }) {
                     onClick={() => {
                       const url = window.location.origin;
                       navigator.clipboard.writeText(url);
-                      alert("Lien de la boutique copié dans le presse-papier !");
+                      alert("Store link copied to clipboard!");
                     }}
                     className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-sm transition-all whitespace-nowrap cursor-pointer active:scale-95"
                   >
-                    Copier le lien
+                    Copy Link
                   </button>
                 </div>
               </div>
@@ -1130,8 +1130,8 @@ export default function AdminApp({ currentUser, supabase }) {
               {storefrontFilteredProducts.length === 0 ? (
                 <div className="text-center py-12 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
                   <Boxes className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-                  <p className="text-sm font-bold text-slate-700">Aucun produit disponible dans cette succursale</p>
-                  <p className="text-xs text-slate-500 mt-1">Ajoutez du stock ou transférez des articles vers cette succursale pour les afficher.</p>
+                  <p className="text-sm font-bold text-slate-700">No products available in this branch</p>
+                  <p className="text-xs text-slate-500 mt-1">Add stock or transfer items to this branch to display them.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -1144,17 +1144,17 @@ export default function AdminApp({ currentUser, supabase }) {
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                         <span className="absolute top-2.5 right-2.5 bg-slate-900/75 backdrop-blur-md text-white text-[10px] font-bold px-3 py-1 rounded-full">
-                          Stock : {product.quantity}
+                          Stock: {product.quantity}
                         </span>
                       </div>
                       <div className="p-4 flex flex-col flex-1 justify-between space-y-3">
                         <div>
                           <h4 className="text-sm font-bold text-slate-900 line-clamp-1">{product.name}</h4>
-                          <p className="text-xs text-slate-500 line-clamp-2 mt-1">{product.description || 'Aucune description fournie.'}</p>
+                          <p className="text-xs text-slate-500 line-clamp-2 mt-1">{product.description || 'No description provided.'}</p>
                         </div>
                         <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-                          <span className="text-[10px] text-slate-400 uppercase font-mono font-bold">Réf: {product.batch_reference || 'N/A'}</span>
-                          <span className="text-sm font-black text-emerald-600">{(product.price || 0).toLocaleString()} FCFA</span>
+                          <span className="text-[10px] text-slate-400 uppercase font-mono font-bold">Ref: {product.batch_reference || 'N/A'}</span>
+                          <span className="text-sm font-black text-emerald-600">#{(product.price || 0).toLocaleString()}</span>
                         </div>
                       </div>
                     </div>
@@ -1225,8 +1225,8 @@ export default function AdminApp({ currentUser, supabase }) {
                 <ShieldCheck className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-lg font-black text-slate-900">Sécurité Administrateur</h3>
-                <p className="text-xs text-slate-500 mt-1">Entrez votre code PIN (6 chiffres) pour confirmer cette action sécurisée :</p>
+                <h3 className="text-lg font-black text-slate-900">Admin Security</h3>
+                <p className="text-xs text-slate-500 mt-1">Enter your PIN code (6 digits) to confirm this secure action:</p>
               </div>
             </div>
 
@@ -1234,7 +1234,7 @@ export default function AdminApp({ currentUser, supabase }) {
               e.preventDefault();
               const verifyingAdmin = staffList.find(s => s.pin_code === adminPinInput && s.role === 'admin' && s.is_active);
               if (!verifyingAdmin) {
-                setAdminPinError("Code PIN incorrect ou privilèges insuffisants.");
+                setAdminPinError("Incorrect PIN code or insufficient privileges.");
                 return;
               }
               setAdminPinModalOpen(false);
@@ -1267,13 +1267,13 @@ export default function AdminApp({ currentUser, supabase }) {
                   }}
                   className="flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-2xl text-xs sm:text-sm transition-all cursor-pointer active:scale-95"
                 >
-                  Annuler
+                  Cancel
                 </button>
                 <button
                   type="submit"
                   className="flex-1 py-3 px-4 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-2xl text-xs sm:text-sm shadow-lg shadow-slate-900/20 transition-all cursor-pointer active:scale-95"
                 >
-                  Confirmer
+                  Confirm
                 </button>
               </div>
             </form>

@@ -33,7 +33,7 @@ export default function InventoryManagement({
   handleUpdateStockVolume,
   handleStartEditProduct,
   handleArchiveProduct,
-  supabase,                    // 👈 Receives Supabase client from AdminApp
+  supabase,                     // 👈 Receives Supabase client from AdminApp
   verifyAdminPinBeforeAction,  // 👈 Receives Admin PIN modal trigger from AdminApp
   fetchProducts,               // Optional fallback refresher
   setProducts                  // Optional state updater
@@ -46,12 +46,12 @@ export default function InventoryManagement({
       if (!authorized) return;
     }
 
-    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer définitivement "${product.name}" ? Cette action est irréversible et déduira le stock immédiatement.`)) {
+    if (!window.confirm(`Are you sure you want to permanently delete "${product.name}"? This action is irreversible and will deduct stock immediately.`)) {
       return;
     }
 
     try {
-      if (!supabase) throw new Error("Client Supabase non initialisé.");
+      if (!supabase) throw new Error("Supabase client not initialized.");
 
       const { error } = await supabase.from('products').delete().eq('id', product.id);
       if (error) throw error;
@@ -63,9 +63,9 @@ export default function InventoryManagement({
         await fetchProducts();
       }
 
-      alert("Produit supprimé avec succès et stock mis à jour !");
+      alert("Product successfully deleted and stock updated!");
     } catch (err) {
-      alert(`Erreur lors de la suppression : ${err.message}`);
+      alert(`Error during deletion: ${err.message}`);
     }
   };
 
@@ -77,42 +77,42 @@ export default function InventoryManagement({
         <div className="flex justify-between items-center mb-5 pb-3 border-b">
           <div>
             <h3 className="font-bold text-sm uppercase text-gray-800">
-              {editingProduct ? 'Modifier le Produit' : 'Entrée en Stock (QG Principal)'}
+              {editingProduct ? 'Edit Product' : 'Stock Intake (Main HQ)'}
             </h3>
             <p className="text-[11px] text-gray-500 mt-0.5">
-              {editingProduct ? 'Mettre à jour la fiche produit' : 'Saisir du stock central à distribuer'}
+              {editingProduct ? 'Update product details' : 'Add central stock to be distributed'}
             </p>
           </div>
           {editingProduct && (
             <button onClick={handleCancelEditProduct} className="text-gray-400 hover:text-red-500 text-xs flex font-medium">
-              <X className="w-4 h-4 mr-1" /> Annuler
+              <X className="w-4 h-4 mr-1" /> Cancel
             </button>
           )}
         </div>
 
         <form onSubmit={handleSaveProduct} className="space-y-4">
           <div>
-            <label className="text-xs font-semibold text-gray-600 mb-1.5 block">Espace d'Affectation</label>
+            <label className="text-xs font-semibold text-gray-600 mb-1.5 block">Assignment Space</label>
             <select 
               value={productBranch || ''} 
               onChange={e => setProductBranch(e.target.value)} 
               className="w-full border border-gray-300 p-3 text-sm rounded-lg bg-gray-50 font-bold text-gray-900 focus:ring-2 focus:ring-[#0f172a] outline-none" 
             >
-              <option value="">🏢 QG Stock Principal (Dépôt Central)</option>
+              <option value="">🏢 HQ Main Stock (Central Depot)</option>
               {branches.map(b => (
                 <option key={b.id} value={b.id}>🏪 {b.name}</option>
               ))}
             </select>
             <p className="text-[10px] text-indigo-600 mt-1 font-medium">
-              * Sélectionner QG pour la gestion comptable centralisée.
+              * Select HQ for centralized accounting management.
             </p>
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-gray-600 mb-1.5 block">Nom du Produit</label>
+            <label className="text-xs font-semibold text-gray-600 mb-1.5 block">Product Name</label>
             <input 
               type="text" 
-              placeholder="Ex: Crème Hydratante Gold" 
+              placeholder="e.g. Gold Moisturizing Cream" 
               value={name} 
               onChange={e => setName(e.target.value)} 
               className="w-full border border-gray-300 p-3 text-sm rounded-lg focus:ring-2 focus:ring-[#0f172a] outline-none" 
@@ -121,10 +121,10 @@ export default function InventoryManagement({
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-gray-600 mb-1.5 block">Référence Lot / Batch</label>
+            <label className="text-xs font-semibold text-gray-600 mb-1.5 block">Batch Reference</label>
             <input 
               type="text" 
-              placeholder="Ex: LOT-2026-001" 
+              placeholder="e.g. LOT-2026-001" 
               value={batch} 
               onChange={e => setBatch(e.target.value)} 
               className="w-full border border-gray-300 p-3 text-sm rounded-lg uppercase focus:ring-2 focus:ring-[#0f172a] outline-none font-medium" 
@@ -134,7 +134,7 @@ export default function InventoryManagement({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-semibold text-gray-600 block mb-1.5">Prix d'Achat (Cout)</label>
+              <label className="text-xs font-semibold text-gray-600 block mb-1.5">Cost Price</label>
               <input 
                 type="number" 
                 placeholder="0"
@@ -145,7 +145,7 @@ export default function InventoryManagement({
               />
             </div>
             <div>
-              <label className="text-xs font-semibold text-gray-600 block mb-1.5">Prix de Vente (Retail)</label>
+              <label className="text-xs font-semibold text-gray-600 block mb-1.5">Retail Price</label>
               <input 
                 type="number" 
                 placeholder="0"
@@ -159,7 +159,7 @@ export default function InventoryManagement({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-semibold text-gray-600 block mb-1.5">Quantité Initiale</label>
+              <label className="text-xs font-semibold text-gray-600 block mb-1.5">Initial Quantity</label>
               <input 
                 type="number" 
                 placeholder="0"
@@ -169,7 +169,7 @@ export default function InventoryManagement({
               />
             </div>
             <div>
-              <label className="text-xs font-semibold text-gray-600 block mb-1.5">Stock Actuel</label>
+              <label className="text-xs font-semibold text-gray-600 block mb-1.5">Current Stock</label>
               <input 
                 type="number" 
                 placeholder="0"
@@ -182,7 +182,7 @@ export default function InventoryManagement({
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-gray-600 block mb-1.5">Image du Produit</label>
+            <label className="text-xs font-semibold text-gray-600 block mb-1.5">Product Image</label>
             <input 
               type="file" 
               accept="image/*" 
@@ -196,7 +196,7 @@ export default function InventoryManagement({
             disabled={uploading} 
             className="w-full bg-[#0f172a] hover:bg-gray-800 disabled:opacity-50 text-white text-sm py-3 rounded-lg font-bold transition-colors shadow-sm"
           >
-            {uploading ? 'Enregistrement...' : editingProduct ? 'Mettre à jour le Produit' : 'Enregistrer dans le Stock QG'}
+            {uploading ? 'Saving...' : editingProduct ? 'Update Product' : 'Save to HQ Stock'}
           </button>
         </form>
       </div>
@@ -206,7 +206,7 @@ export default function InventoryManagement({
         <div className="flex flex-col lg:flex-row justify-between pb-4 border-b gap-4 lg:items-center">
           <div className="flex flex-wrap items-center gap-2.5">
             <h3 className="font-bold text-sm uppercase text-gray-800 flex items-center mr-2">
-              <Layers className="w-5 h-5 mr-2 text-indigo-600" /> Catalogue des Stocks
+              <Layers className="w-5 h-5 mr-2 text-indigo-600" /> Stock Catalogue
             </h3>
 
             {/* BATCH TRANSFER BUTTON */}
@@ -215,7 +215,7 @@ export default function InventoryManagement({
               className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3.5 py-2 rounded-lg flex items-center space-x-1.5 shadow-xs transition-all cursor-pointer"
             >
               <ArrowRightLeft className="w-3.5 h-3.5" />
-              <span>Transfert Groupé (QG → Succursales)</span>
+              <span>Batch Transfer (HQ → Branches)</span>
             </button>
 
             {/* TRANSFER HISTORY & RECEIPTS BUTTON */}
@@ -225,7 +225,7 @@ export default function InventoryManagement({
                 className="bg-zinc-800 hover:bg-zinc-900 text-white text-xs font-bold px-3.5 py-2 rounded-lg flex items-center space-x-1.5 shadow-xs transition-all cursor-pointer"
               >
                 <ReceiptText className="w-3.5 h-3.5 text-amber-400" />
-                <span>Reçus & Historique</span>
+                <span>Receipts & History</span>
               </button>
             )}
           </div>
@@ -235,7 +235,7 @@ export default function InventoryManagement({
               onClick={() => setShowArchived(!showArchived)} 
               className="px-3.5 py-2 rounded-lg text-xs font-bold bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors cursor-pointer"
             >
-              {showArchived ? 'Voir Actifs' : 'Voir Archivés'}
+              {showArchived ? 'View Active' : 'View Archived'}
             </button>
             <select 
               value={selectedBatchFilter} 
@@ -251,10 +251,10 @@ export default function InventoryManagement({
           <table className="w-full text-left text-sm min-w-[700px]">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="p-3.5 font-bold text-gray-600 text-xs uppercase tracking-wider">Espace / Emplacement</th>
-                <th className="p-3.5 font-bold text-gray-600 text-xs uppercase tracking-wider">Produit & Lot</th>
-                <th className="p-3.5 font-bold text-gray-600 text-xs uppercase tracking-wider">Prix Achat / Vente</th>
-                <th className="p-3.5 font-bold text-center text-gray-600 text-xs uppercase tracking-wider">Stock Dispo</th>
+                <th className="p-3.5 font-bold text-gray-600 text-xs uppercase tracking-wider">Space / Location</th>
+                <th className="p-3.5 font-bold text-gray-600 text-xs uppercase tracking-wider">Product & Batch</th>
+                <th className="p-3.5 font-bold text-gray-600 text-xs uppercase tracking-wider">Cost / Retail Price</th>
+                <th className="p-3.5 font-bold text-center text-gray-600 text-xs uppercase tracking-wider">Available Stock</th>
                 <th className="p-3.5 font-bold text-center text-gray-600 text-xs uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
@@ -262,7 +262,7 @@ export default function InventoryManagement({
               {filteredProducts.length === 0 ? (
                 <tr>
                   <td colSpan="5" className="text-center py-8 text-gray-400 font-medium">
-                    Aucun produit trouvé dans cet emplacement.
+                    No products found in this location.
                   </td>
                 </tr>
               ) : (
@@ -274,20 +274,20 @@ export default function InventoryManagement({
                     <tr key={p.id} className={`${p.is_archived ? 'opacity-50 bg-gray-50' : 'bg-white hover:bg-gray-50/80'} transition-colors`}>
                       <td className="p-3.5">
                         <span className={`px-2.5 py-1 rounded-full text-[10px] font-black tracking-wide uppercase ${isHQ ? 'bg-slate-900 text-white' : 'bg-blue-100 text-blue-800'}`}>
-                          {isHQ ? '🏢 QG Main Stock' : `🏪 ${branchObj?.name || 'Succursale'}`}
+                          {isHQ ? '🏢 HQ Main Stock' : `🏪 ${branchObj?.name || 'Branch'}`}
                         </span>
                       </td>
                       <td className="p-3.5 font-medium text-gray-900 flex items-center gap-3">
                         <img src={p.image_url || '/placeholder.png'} alt="" className="w-10 h-10 rounded-lg object-cover border border-gray-200 shadow-2xs shrink-0" />
                         <div>
                           <p className="font-bold text-gray-900 text-xs">{p.name}</p>
-                          <p className="text-[10px] text-gray-500 uppercase font-semibold">Lot: {p.batch_reference || 'N/A'}</p>
+                          <p className="text-[10px] text-gray-500 uppercase font-semibold">Batch: {p.batch_reference || 'N/A'}</p>
                         </div>
                       </td>
                       <td className="p-3.5">
                         <div className="flex flex-col">
-                          <span className="text-[11px] text-gray-500">Achat: {p.cost_price?.toLocaleString()} FCFA</span>
-                          <span className="font-bold text-emerald-600 text-xs">Vente: {p.price?.toLocaleString()} FCFA</span>
+                          <span className="text-[11px] text-gray-500">Cost: #{p.cost_price?.toLocaleString()}</span>
+                          <span className="font-bold text-emerald-600 text-xs">Retail: #{p.price?.toLocaleString()}</span>
                         </div>
                       </td>
                       <td className="p-3.5 text-center">
@@ -300,18 +300,18 @@ export default function InventoryManagement({
                       </td>
                       <td className="p-3.5 text-center">
                         <div className="flex items-center justify-center space-x-3">
-                          <button title="Modifier Produit" onClick={() => handleStartEditProduct(p)} className="text-blue-600 hover:text-blue-800 transition-colors p-1 cursor-pointer">
+                          <button title="Edit Product" onClick={() => handleStartEditProduct(p)} className="text-blue-600 hover:text-blue-800 transition-colors p-1 cursor-pointer">
                             <Pencil className="w-4 h-4" />
                           </button>
                           <button 
-                            title={p.is_archived ? "Restaurer" : "Archiver"} 
+                            title={p.is_archived ? "Restore" : "Archive"} 
                             onClick={() => handleArchiveProduct(p.id, !p.is_archived)} 
                             className={`${p.is_archived ? "text-emerald-600 hover:text-emerald-800" : "text-gray-400 hover:text-red-600"} transition-colors p-1 cursor-pointer`}
                           >
                             <Archive className="w-4 h-4" />
                           </button>
                           <button 
-                            title="Supprimer Définitivement (PIN Admin requis)" 
+                            title="Permanently Delete (Admin PIN required)" 
                             onClick={() => handleDeleteProduct(p)} 
                             className="text-gray-400 hover:text-rose-600 transition-colors p-1 cursor-pointer"
                           >
