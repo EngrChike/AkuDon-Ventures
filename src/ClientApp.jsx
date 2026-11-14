@@ -147,9 +147,9 @@ export default function ClientApp() {
 
     let msg = `✨ *AKUDON VENTURES - NEW ORDER (${storeBranch})* ✨\n------------------------------------------\n\n`;
     cart.forEach((item, idx) => {
-      msg += `🛍 *${idx + 1}. ${item.name}*\n  Price: ${item.price.toLocaleString()} FCFA\n  Qty: ${item.quantity}\n------------------------------------------\n`;
+      msg += `🛍 *${idx + 1}. ${item.name}*\n  Price: #${item.price.toLocaleString()}\n  Qty: ${item.quantity}\n------------------------------------------\n`;
     });
-    msg += `\n🎯 *GRAND TOTAL:* ${cartTotal.toLocaleString()} FCFA\n\nPlease confirm availability for immediate dispatch!`;
+    msg += `\n🎯 *GRAND TOTAL:* #${cartTotal.toLocaleString()}\n\nPlease confirm availability for immediate dispatch!`;
     
     window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank');
   };
@@ -315,7 +315,7 @@ export default function ClientApp() {
                         </div>
                       </div>
                       <div className="mt-3">
-                        <p className="text-lg md:text-xl font-black text-[#f68b1e] tracking-tight mb-2">Price: {p.price?.toLocaleString()} FCFA</p>
+                        <p className="text-lg md:text-xl font-black text-[#f68b1e] tracking-tight mb-2">Price: #{p.price?.toLocaleString()}</p>
                         <div className="mt-2.5">
                           {itemQtyInCart > 0 ? (
                             <div className="flex items-center justify-between border border-[#f68b1e] rounded-lg overflow-hidden bg-white h-7 shadow-sm">
@@ -405,7 +405,7 @@ export default function ClientApp() {
                         <img src={item.image_url} alt="" className="w-10 h-10 object-cover rounded bg-white border" />
                         <div>
                           <h4 className="text-sm font-extrabold text-black line-clamp-1">{item.name}</h4>
-                          <p className="text-sm font-black text-[#f68b1e]">Price: {item.price?.toLocaleString()} FCFA</p>
+                          <p className="text-sm font-black text-[#f68b1e]">Price: #{item.price?.toLocaleString()}</p>
                         </div>
                       </div>
                       <div className="flex items-center space-x-1.5 bg-white border rounded p-0.5">
@@ -422,7 +422,7 @@ export default function ClientApp() {
               <div className="border-t pt-3">
                 <div className="flex justify-between items-baseline font-bold mb-3">
                   <span className="text-gray-400 text-xs uppercase">Total:</span>
-                  <span className="text-lg font-black text-black">Price: {cartTotal.toLocaleString()} FCFA</span>
+                  <span className="text-lg font-black text-black">Price: #{cartTotal.toLocaleString()}</span>
                 </div>
                 <button onClick={handleWhatsAppCheckout} className="w-full bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-xl font-bold text-xs uppercase text-center block">
                   Order via WhatsApp
