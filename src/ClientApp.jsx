@@ -9,7 +9,7 @@ export default function ClientApp() {
   const [searchTerm, setSearchTerm] = useState('');
   
   // State for the globally active branch display name
-  const [storeBranch, setStoreBranch] = useState('Siège Principal');
+  const [storeBranch, setStoreBranch] = useState('Main Headquarters');
   const [isLoading, setIsLoading] = useState(true);
 
   // Pagination states
@@ -56,7 +56,7 @@ export default function ClientApp() {
         activeBranchId = settingsData.active_branch;
       }
 
-      let activeBranchName = 'Siège Principal';
+      let activeBranchName = 'Main Headquarters';
       let selectedBranchId = null;
 
       if (branchesList.length > 0 && activeBranchId) {
@@ -83,17 +83,16 @@ export default function ClientApp() {
         query = query.is('branch_id', null);
       }
 
-      const { data, error } = await query; // Removed order() to allow full randomization
+      const { data, error } = await query;
       
       if (!error && data) {
-        // Randomize products before setting state
         const randomizedData = shuffleArray(data);
         setProducts(randomizedData);
       } else if (error) {
         console.error("Error fetching products:", error.message);
       }
     } catch (err) {
-      console.error("Erreur de récupération: ", err);
+      console.error("Fetch error: ", err);
     }
     
     setIsLoading(false);
@@ -146,11 +145,11 @@ export default function ClientApp() {
       });
     }
 
-    let msg = `✨ *CHIKE GLOBAL - NOUVELLE COMMANDE (${storeBranch})* ✨\n------------------------------------------\n\n`;
+    let msg = `✨ *CHIKE GLOBAL - NEW ORDER (${storeBranch})* ✨\n------------------------------------------\n\n`;
     cart.forEach((item, idx) => {
-      msg += `🛍 *${idx + 1}. ${item.name}*\n  Prix: ${item.price.toLocaleString()} FCFA\n  Qté: ${item.quantity}\n------------------------------------------\n`;
+      msg += `🛍 *${idx + 1}. ${item.name}*\n  Price: ${item.price.toLocaleString()} FCFA\n  Qty: ${item.quantity}\n------------------------------------------\n`;
     });
-    msg += `\n🎯 *TOTAL GÉNÉRAL:* ${cartTotal.toLocaleString()} FCFA\n\nMerci de confirmer la disponibilité pour expédition immédiate !`;
+    msg += `\n🎯 *GRAND TOTAL:* ${cartTotal.toLocaleString()} FCFA\n\nPlease confirm availability for immediate dispatch!`;
     
     window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank');
   };
@@ -175,7 +174,6 @@ export default function ClientApp() {
 
   const handlePageChange = (newPage) => {
     setCurrentPage(newPage);
-    // Scroll back to the top of the product grid when changing pages
     if (topOfGridRef.current) {
       topOfGridRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
@@ -205,7 +203,7 @@ export default function ClientApp() {
                 strokeLinecap="round" 
                 fill="none"
               />
-            </svg>
+             </svg>
             </div>
             <div className="flex flex-col justify-center">
               <span className="font-black text-base sm:text-xl tracking-wider uppercase text-zinc-900 leading-none group-hover:text-amber-600 transition-colors">CHIKE  </span>
@@ -218,7 +216,7 @@ export default function ClientApp() {
               <a href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noreferrer" className="p-1.5 rounded-lg bg-green-50 hover:bg-green-100 text-green-600 flex items-center justify-center" title="WhatsApp"><Smartphone className="w-3.5 h-3.5 sm:w-4 sm:h-4" /></a>
               <a href={FACEBOOK_URL} target="_blank" rel="noreferrer" className="p-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 font-bold text-xs w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center" title="Facebook">f</a>
               <a href={TIKTOK_URL} target="_blank" rel="noreferrer" className="p-1.5 rounded-lg bg-zinc-50 hover:bg-zinc-100 text-zinc-900 flex items-center justify-center" title="TikTok"><Video className="w-3.5 h-3.5 sm:w-4 sm:h-4" /></a>
-              <a href="#admin" className="p-1.5 rounded-lg bg-zinc-100 hover:bg-amber-100 text-zinc-600 hover:text-amber-600 flex items-center justify-center transition-colors" title="Tableau de bord Admin">
+              <a href="#admin" className="p-1.5 rounded-lg bg-zinc-100 hover:bg-amber-100 text-zinc-600 hover:text-amber-600 flex items-center justify-center transition-colors" title="Admin Dashboard">
                 <Lock className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </a>
             </div>
@@ -236,16 +234,16 @@ export default function ClientApp() {
           <div>
             <div className="flex items-center gap-2 mb-2.5">
               <span className="bg-[#f68b1e]/10 text-[#f68b1e] text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full border border-[#f68b1e]/20 flex items-center gap-1">
-                <MapPin className="w-3 h-3" /> Boutique: {storeBranch}
+                <MapPin className="w-3 h-3" /> Branch: {storeBranch}
               </span>
             </div>
-            <h1 className="text-xl md:text-3xl font-black tracking-tight">Collection CHIKE GLOBAL</h1>
-            <p className="text-zinc-400 text-xs mt-1">Passez votre commande instantanément via WhatsApp pour notre boutique de {storeBranch}.</p>
+            <h1 className="text-xl md:text-3xl font-black tracking-tight">CHIKE GLOBAL Collection</h1>
+            <p className="text-zinc-400 text-xs mt-1">Place your order instantly via WhatsApp for our {storeBranch} branch.</p>
           </div>
           <div className="bg-white/5 px-4 py-2.5 rounded-xl border border-white/10 mt-4 md:mt-0">
-            <p className="text-[10px] text-zinc-400 uppercase tracking-wider">Livraison Rapide</p>
+            <p className="text-[10px] text-zinc-400 uppercase tracking-wider">Fast Delivery</p>
             <p className="text-[#f68b1e] font-bold text-sm flex items-center justify-center space-x-1 mt-0.5">
-              <Smartphone className="w-3.5 h-3.5" /> <span>Commande via WhatsApp</span>
+              <Smartphone className="w-3.5 h-3.5" /> <span>Order via WhatsApp</span>
             </p>
           </div>
         </div>
@@ -256,11 +254,11 @@ export default function ClientApp() {
             <Search className="w-4 h-4 text-gray-400 absolute left-3.5 pointer-events-none" />
             <input 
               type="text" 
-              placeholder="Rechercher un produit, une marque, un soin..." 
+              placeholder="Search for a product, brand, or treatment..." 
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
-                setCurrentPage(1); // Reset to page 1 on new search
+                setCurrentPage(1);
               }}
               className="w-full bg-white text-sm text-black border border-gray-200 pl-10 pr-10 py-2.5 rounded-xl focus:outline-none focus:border-[#f68b1e] focus:ring-1 focus:ring-[#f68b1e] transition-all shadow-xs"
             />
@@ -278,7 +276,7 @@ export default function ClientApp() {
           </div>
         ) : currentProducts.length === 0 ? (
           <div className="bg-white rounded-2xl p-16 text-center border border-gray-100">
-            <p className="text-gray-400 text-sm">Aucun produit trouvé pour la boutique de {storeBranch}.</p>
+            <p className="text-gray-400 text-sm">No products found for the {storeBranch} branch.</p>
           </div>
         ) : (
           <>
@@ -296,7 +294,7 @@ export default function ClientApp() {
                       <img src={p.image_url} alt={p.name} className="object-cover w-full h-full" />
                       <div className="absolute bottom-2 left-2 z-10 flex flex-col gap-1">
                         <span className="bg-[#f68b1e] text-white font-bold text-[10px] px-2 py-0.5 rounded shadow-md">
-                          {p.quantity} en stock
+                          {p.quantity} in stock
                         </span>
                       </div>
                     </div>
@@ -317,7 +315,7 @@ export default function ClientApp() {
                         </div>
                       </div>
                       <div className="mt-3">
-                        <p className="text-lg md:text-xl font-black text-[#f68b1e] tracking-tight mb-2">Prix: {p.price?.toLocaleString()} FCFA</p>
+                        <p className="text-lg md:text-xl font-black text-[#f68b1e] tracking-tight mb-2">Price: {p.price?.toLocaleString()} FCFA</p>
                         <div className="mt-2.5">
                           {itemQtyInCart > 0 ? (
                             <div className="flex items-center justify-between border border-[#f68b1e] rounded-lg overflow-hidden bg-white h-7 shadow-sm">
@@ -327,7 +325,7 @@ export default function ClientApp() {
                             </div>
                           ) : (
                             <button onClick={() => addToCart(p)} className="w-full bg-[#f68b1e] hover:bg-[#e07a16] text-white font-bold py-1.5 rounded-lg text-xs tracking-wide transition-all">
-                              Ajouter au panier
+                              Add to cart
                             </button>
                           )}
                         </div>
@@ -346,7 +344,7 @@ export default function ClientApp() {
                   disabled={currentPage === 1}
                   className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-bold text-gray-600 bg-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
                 >
-                  &larr; Précédent
+                  &larr; Previous
                 </button>
                 
                 <div className="flex items-center space-x-1 px-2">
@@ -374,7 +372,7 @@ export default function ClientApp() {
                   disabled={currentPage === totalPages}
                   className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-bold text-gray-600 bg-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
                 >
-                  Suivant &rarr;
+                  Next &rarr;
                 </button>
               </div>
             )}
@@ -394,11 +392,11 @@ export default function ClientApp() {
           <div className="w-full max-w-sm bg-white h-full p-5 flex flex-col justify-between shadow-xl">
             <div>
               <div className="flex justify-between items-center border-b pb-3 mb-4">
-                <h3 className="font-bold text-gray-900 uppercase text-xs">Votre Panier ({cartCount})</h3>
+                <h3 className="font-bold text-gray-900 uppercase text-xs">Your Cart ({cartCount})</h3>
                 <button onClick={() => setIsCartOpen(false)} className="text-gray-400 text-xl font-light">&times;</button>
               </div>
               {cart.length === 0 ? (
-                <p className="text-center text-gray-400 text-xs py-10">Votre panier est vide.</p>
+                <p className="text-center text-gray-400 text-xs py-10">Your cart is empty.</p>
               ) : (
                 <div className="space-y-3 overflow-y-auto max-h-[75vh]">
                   {cart.map(item => (
@@ -407,7 +405,7 @@ export default function ClientApp() {
                         <img src={item.image_url} alt="" className="w-10 h-10 object-cover rounded bg-white border" />
                         <div>
                           <h4 className="text-sm font-extrabold text-black line-clamp-1">{item.name}</h4>
-                          <p className="text-sm font-black text-[#f68b1e]">Prix: {item.price?.toLocaleString()} FCFA</p>
+                          <p className="text-sm font-black text-[#f68b1e]">Price: {item.price?.toLocaleString()} FCFA</p>
                         </div>
                       </div>
                       <div className="flex items-center space-x-1.5 bg-white border rounded p-0.5">
@@ -424,10 +422,10 @@ export default function ClientApp() {
               <div className="border-t pt-3">
                 <div className="flex justify-between items-baseline font-bold mb-3">
                   <span className="text-gray-400 text-xs uppercase">Total:</span>
-                  <span className="text-lg font-black text-black">Prix: {cartTotal.toLocaleString()} FCFA</span>
+                  <span className="text-lg font-black text-black">Price: {cartTotal.toLocaleString()} FCFA</span>
                 </div>
                 <button onClick={handleWhatsAppCheckout} className="w-full bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-xl font-bold text-xs uppercase text-center block">
-                  Commander sur WhatsApp
+                  Order via WhatsApp
                 </button>
               </div>
             )}

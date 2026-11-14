@@ -1,437 +1,405 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { supabase } from './utils/supabaseClient';
-import { ShoppingCart, Smartphone, Star, Heart, Video, Search, X, Lock, MapPin } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { UserPlus, UserCheck, UserX, Clock, Folder, ChevronDown, ChevronRight, Key, Edit, XCircle, ShieldAlert } from 'lucide-react';
 
-export default function ClientApp() {
-  const [products, setProducts] = useState([]);
-  const [cart, setCart] = useState([]);
-  const [isCartOpen, setIsCartOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+export default function StaffManagement({ supabase, branches = [] }) {
+  const [staffList, setStaffList] = useState([]);
+  const [salesHistory, setSalesHistory] = useState([]);
+  const [expandedMonths, setExpandedMonths] = useState({});
   
-  // State for the globally active branch display name
-  const [storeBranch, setStoreBranch] = useState('Main Headquarters');
-  const [isLoading, setIsLoading] = useState(true);
+  // Form State (utilisé pour la Création ET la Modification)
+  const [formData, setFormData] = useState({ fullName: '', pinCode: '', role: 'staff', branchId: '' });
+  const [editingStaff, setEditingStaff] = useState(null);
 
-  // Pagination states
-  const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 15;
-  const topOfGridRef = useRef(null);
-
-  // OFFICIAL LINKS & HANDLES
-  const WHATSAPP_NUMBER = '2250100130109';
-  const FACEBOOK_URL = 'https://facebook.com/profile.php?id=61590626370497';
-  const TIKTOK_URL = 'https://tiktok.com/@your-profile';
-
-  // Helper to randomize array (Fisher-Yates shuffle)
-  const shuffleArray = (array) => {
-    let shuffled = [...array];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    return shuffled;
-  };
+  // Modal Security State (Remplace window.prompt)
+  const [isPinModalOpen, setIsPinModalOpen] = useState(false);
+  const [adminPinInput, setAdminPinInput] = useState('');
+  const [pinError, setPinError] = useState('');
+  const [pendingAction, setPendingAction] = useState(null);
 
   useEffect(() => {
-    fetchActiveBranchAndProducts();
+    fetchStaff();
+    fetchSales();
   }, []);
 
-  const fetchActiveBranchAndProducts = async () => {
-    setIsLoading(true);
+  const fetchStaff = async () => {
+    const { data, error } = await supabase
+      .from('staff')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (!error && data) setStaffList(data);
+  };
 
-    try {
-      const { data: branchesData } = await supabase
-        .from('branches')
-        .select('id, name');
+  const fetchSales = async () => {
+    const { data, error } = await supabase
+      .from('customer_history')
+      .select('*')
+      .not('staff_id', 'is', null)
+      .order('created_at', { ascending: false });
+    if (!error && data) setSalesHistory(data);
+  };
 
-      const branchesList = branchesData || [];
+  // 🔒 Déclencheur de validation Admin
+  const requestAdminAuth = (actionCallback) => {
+    setAdminPinInput('');
+    setPinError('');
+    setPendingAction(() => actionCallback);
+    setIsPinModalOpen(true);
+  };
 
-      let activeBranchId = null;
-      const { data: settingsData, error: settingsError } = await supabase
-        .from('store_settings')
-        .select('active_branch')
-        .maybeSingle();
+  // 🔒 Soumission et vérification du PIN dans la Modal
+  const handleVerifyAdminPin = (e) => {
+    e.preventDefault();
+    const verifyingAdmin = staffList.find(s => s.pin_code === adminPinInput.trim() && s.role === 'admin' && s.is_active);
 
-      if (!settingsError && settingsData && settingsData.active_branch) {
-        activeBranchId = settingsData.active_branch;
-      }
-
-      let activeBranchName = 'Main Headquarters';
-      let selectedBranchId = null;
-
-      if (branchesList.length > 0 && activeBranchId) {
-        const matchedBranch = branchesList.find(b => String(b.id) === String(activeBranchId));
-        if (matchedBranch) {
-          activeBranchName = matchedBranch.name;
-          selectedBranchId = matchedBranch.id;
-        }
-      }
-
-      setStoreBranch(activeBranchName);
-
-      let query = supabase
-        .from('products')
-        .select('*')
-        .eq('is_archived', false)
-        .gt('quantity', 0);
-
-      if (branchesList.length === 0) {
-        // No branch filter applied
-      } else if (selectedBranchId) {
-        query = query.eq('branch_id', selectedBranchId);
-      } else {
-        query = query.is('branch_id', null);
-      }
-
-      const { data, error } = await query;
-      
-      if (!error && data) {
-        const randomizedData = shuffleArray(data);
-        setProducts(randomizedData);
-      } else if (error) {
-        console.error("Error fetching products:", error.message);
-      }
-    } catch (err) {
-      console.error("Fetch error: ", err);
+    if (!verifyingAdmin) {
+      setPinError("❌ Code PIN administrateur incorrect ou non autorisé.");
+      return;
     }
-    
-    setIsLoading(false);
-  };
 
-  const addToCart = (product) => {
-    const stockAvailable = product.quantity !== null ? product.quantity : (product.stock_status ? 999 : 0);
-    if (stockAvailable <= 0) return;
-
-    setCart(curr => {
-      const found = curr.find(item => item.id === product.id);
-      if (found) {
-        return curr.map(item => 
-          item.id === product.id
-            ? { ...item, quantity: item.quantity < stockAvailable ? item.quantity + 1 : item.quantity }
-            : item
-        );
-      }
-      return [...curr, { ...product, quantity: 1 }];
-    });
-  };
-
-  const getProductCartQty = (productId) => {
-    const item = cart.find(i => i.id === productId);
-    return item ? item.quantity : 0;
-  };
-
-  const changeQuantity = (product, delta) => {
-    const currentQty = getProductCartQty(product.id);
-    const newQty = currentQty + delta;
-    const stockAvailable = product.quantity !== null ? product.quantity : (product.stock_status ? 999 : 0);
-
-    if (newQty <= 0) {
-      setCart(curr => curr.filter(i => i.id !== product.id));
-    } else if (newQty <= stockAvailable) {
-      setCart(curr => curr.map(i => i.id === product.id ? { ...i, quantity: newQty } : i));
+    setIsPinModalOpen(false);
+    if (pendingAction) {
+      pendingAction();
+      setPendingAction(null);
     }
   };
 
-  const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  // --- ACTIONS STAFF ---
 
-  const handleWhatsAppCheckout = () => {
-    if (cart.length === 0) return;
-
-    if (typeof window !== 'undefined' && window.fbq) {
-      window.fbq('track', 'Lead', {
-        value: cartTotal,
-        currency: 'XOF' 
+  const handleStartEdit = (staff) => {
+    requestAdminAuth(() => {
+      setEditingStaff(staff);
+      setFormData({
+        fullName: staff.full_name,
+        pinCode: staff.pin_code,
+        role: staff.role,
+        branchId: staff.branch_id || ''
       });
-    }
-
-    let msg = `✨ *CHIKE GLOBAL - NEW ORDER (${storeBranch})* ✨\n------------------------------------------\n\n`;
-    cart.forEach((item, idx) => {
-      msg += `🛍 *${idx + 1}. ${item.name}*\n  Price: ${item.price.toLocaleString()} FCFA\n  Qty: ${item.quantity}\n------------------------------------------\n`;
     });
-    msg += `\n🎯 *GRAND TOTAL:* ${cartTotal.toLocaleString()} FCFA\n\nPlease confirm availability for immediate dispatch!`;
-    
-    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
-  // Filter products based on search
-  const filteredProducts = products.filter(product => {
-    const pName = product.name ? product.name.toLowerCase() : '';
-    const pDesc = product.description ? product.description.toLowerCase() : '';
-    const query = searchTerm.toLowerCase();
-    
-    return pName.includes(query) || pDesc.includes(query);
-  });
+  const handleCancelEdit = () => {
+    setEditingStaff(null);
+    setFormData({ fullName: '', pinCode: '', role: 'staff', branchId: '' });
+  };
 
-  // Calculate pagination
-  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
-  
-  // Get current page products
-  const currentProducts = filteredProducts.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
+  const handleSaveStaff = async (e) => {
+    e.preventDefault();
+    if (!formData.fullName || !formData.pinCode) return alert("Nom complet et PIN requis");
 
-  const handlePageChange = (newPage) => {
-    setCurrentPage(newPage);
-    if (topOfGridRef.current) {
-      topOfGridRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const payload = {
+      full_name: formData.fullName.trim(),
+      pin_code: formData.pinCode.trim(),
+      role: formData.role,
+      branch_id: formData.branchId || null
+    };
+
+    if (editingStaff) {
+      // MODIFICATION
+      const { error } = await supabase.from('staff').update(payload).eq('id', editingStaff.id);
+      if (error) {
+        alert("Erreur lors de la modification.");
+      } else {
+        alert("Compte staff modifié avec succès !");
+        handleCancelEdit();
+        fetchStaff();
+      }
+    } else {
+      // CRÉATION
+      const { error } = await supabase.from('staff').insert([payload]);
+      if (error) {
+        alert(error.code === '23505' ? "Ce code PIN est déjà utilisé." : "Erreur de création.");
+      } else {
+        alert("Compte staff créé avec succès !");
+        handleCancelEdit();
+        fetchStaff();
+      }
     }
   };
+
+  const toggleStaffStatus = (id, currentStatus) => {
+    requestAdminAuth(async () => {
+      const { error } = await supabase.from('staff').update({ is_active: !currentStatus }).eq('id', id);
+      if (!error) {
+        fetchStaff();
+        alert(`Statut du compte mis à jour (${!currentStatus ? 'Actif' : 'Désactivé'}).`);
+      } else {
+        alert("Erreur lors de la mise à jour.");
+      }
+    });
+  };
+
+  // --- LOGIQUE D'AFFICHAGE DES VENTES ---
+  
+  const toggleMonth = (monthKey) => setExpandedMonths(prev => ({ ...prev, [monthKey]: !prev[monthKey] }));
+
+  const staffMap = useMemo(() => {
+    const map = {};
+    staffList.forEach(s => { map[s.id] = s.full_name; });
+    return map;
+  }, [staffList]);
+
+  const { todayStats, monthlyArchives } = useMemo(() => {
+    const now = new Date();
+    const shiftStart = new Date(now);
+    if (now.getHours() < 6) shiftStart.setDate(shiftStart.getDate() - 1); 
+    shiftStart.setHours(6, 0, 0, 0);
+
+    const todayData = {};
+    const archives = {};
+
+    salesHistory.forEach(sale => {
+      const saleDate = new Date(sale.created_at);
+      const staffName = sale.staff_name || staffMap[sale.staff_id] || 'Inconnu';
+      const total = sale.total || 0;
+
+      if (saleDate >= shiftStart) {
+        if (!todayData[staffName]) todayData[staffName] = { count: 0, total: 0 };
+        todayData[staffName].count += 1;
+        todayData[staffName].total += total;
+      } else {
+        const monthKey = `${saleDate.getFullYear()}-${String(saleDate.getMonth() + 1).padStart(2, '0')}`;
+        const monthLabel = saleDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+
+        if (!archives[monthKey]) archives[monthKey] = { label: monthLabel, staffData: {} };
+        if (!archives[monthKey].staffData[staffName]) archives[monthKey].staffData[staffName] = { count: 0, total: 0 };
+        
+        archives[monthKey].staffData[staffName].count += 1;
+        archives[monthKey].staffData[staffName].total += total;
+      }
+    });
+
+    return { todayStats: todayData, monthlyArchives: archives };
+  }, [salesHistory, staffMap]);
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7] text-gray-900 font-sans antialiased relative">
-      <header className="bg-white text-black sticky top-0 z-40 shadow-sm border-b border-gray-100 px-4 py-3">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center space-x-2.5 cursor-pointer shrink-0 group select-none" onClick={() => {setSearchTerm(''); setCurrentPage(1);}}>
-            <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-amber-500 via-orange-500 to-amber-600 rounded-xl flex items-center justify-center shadow-md p-1.5">
-             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-              <rect width="100" height="100" rx="28" fill="#f68b1e"/>
-              <path 
-                d="M30 25 C30 25, 45 15, 50 15 C55 15, 70 25, 70 25 C70 45, 60 75, 50 85 C40 75, 30 45, 30 25 Z" 
-                stroke="#FFFFFF" 
-                strokeWidth="7" 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                fill="none"
-              />
-              <circle cx="50" cy="42" r="7" fill="#FFFFFF"/>
-              <path 
-                d="M40 60 C45 65, 55 65, 60 60" 
-                stroke="#FFFFFF" 
-                strokeWidth="7" 
-                strokeLinecap="round" 
-                fill="none"
-              />
-             </svg>
-            </div>
-            <div className="flex flex-col justify-center">
-              <span className="font-black text-base sm:text-xl tracking-wider uppercase text-zinc-900 leading-none group-hover:text-amber-600 transition-colors">CHIKE  </span>
-              <span className="text-[10px] sm:text-[11px] font-bold text-amber-500 tracking-[0.25em] uppercase leading-tight mt-0.5">GLOBAL</span>
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-2 sm:space-x-4 ml-auto">
-            <div className="flex items-center space-x-1 sm:space-x-2 border-r border-gray-200 pr-2 sm:pr-4 shrink-0">
-              <a href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noreferrer" className="p-1.5 rounded-lg bg-green-50 hover:bg-green-100 text-green-600 flex items-center justify-center" title="WhatsApp"><Smartphone className="w-3.5 h-3.5 sm:w-4 sm:h-4" /></a>
-              <a href={FACEBOOK_URL} target="_blank" rel="noreferrer" className="p-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 font-bold text-xs w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center" title="Facebook">f</a>
-              <a href={TIKTOK_URL} target="_blank" rel="noreferrer" className="p-1.5 rounded-lg bg-zinc-50 hover:bg-zinc-100 text-zinc-900 flex items-center justify-center" title="TikTok"><Video className="w-3.5 h-3.5 sm:w-4 sm:h-4" /></a>
-              <a href="#admin" className="p-1.5 rounded-lg bg-zinc-100 hover:bg-amber-100 text-zinc-600 hover:text-amber-600 flex items-center justify-center transition-colors" title="Admin Dashboard">
-                <Lock className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              </a>
-            </div>
-
-            <button onClick={() => setIsCartOpen(true)} className="relative bg-black text-white p-2.5 rounded-xl flex items-center space-x-2 hover:bg-zinc-800 transition-colors shrink-0">
-              <ShoppingCart className="w-4 h-4" />
-              {cartCount > 0 && <span className="bg-[#f68b1e] text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">{cartCount}</span>}
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-7xl w-full mx-auto p-4 md:py-8">
-        <div className="bg-gradient-to-r from-zinc-950 via-zinc-900 to-amber-950 text-white rounded-2xl p-6 md:p-8 mb-6 border border-zinc-800 flex flex-col md:flex-row justify-between items-center">
-          <div>
-            <div className="flex items-center gap-2 mb-2.5">
-              <span className="bg-[#f68b1e]/10 text-[#f68b1e] text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full border border-[#f68b1e]/20 flex items-center gap-1">
-                <MapPin className="w-3 h-3" /> Branch: {storeBranch}
-              </span>
-            </div>
-            <h1 className="text-xl md:text-3xl font-black tracking-tight">CHIKE GLOBAL Collection</h1>
-            <p className="text-zinc-400 text-xs mt-1">Place your order instantly via WhatsApp for our {storeBranch} branch.</p>
-          </div>
-          <div className="bg-white/5 px-4 py-2.5 rounded-xl border border-white/10 mt-4 md:mt-0">
-            <p className="text-[10px] text-zinc-400 uppercase tracking-wider">Fast Delivery</p>
-            <p className="text-[#f68b1e] font-bold text-sm flex items-center justify-center space-x-1 mt-0.5">
-              <Smartphone className="w-3.5 h-3.5" /> <span>Order via WhatsApp</span>
-            </p>
-          </div>
-        </div>
-
-        {/* SEARCH BAR */}
-        <div ref={topOfGridRef} className="max-w-xl mx-auto mb-8 space-y-3 px-1 scroll-mt-24">
-          <div className="relative flex items-center">
-            <Search className="w-4 h-4 text-gray-400 absolute left-3.5 pointer-events-none" />
+    <div className="space-y-6">
+      
+      {/* SECTION 1: ACCOUNT CREATION & MANAGEMENT */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Formulaire Créer/Modifier */}
+        <div className={`bg-white p-5 rounded-xl border shadow-sm h-fit transition-all duration-300 ${editingStaff ? 'border-blue-400 ring-2 ring-blue-50' : 'border-gray-200'}`}>
+          <h3 className={`font-bold text-xs uppercase pb-2 border-b mb-4 flex items-center ${editingStaff ? 'text-blue-600' : 'text-gray-700'}`}>
+            {editingStaff ? <Edit className="w-4 h-4 mr-2" /> : <UserPlus className="w-4 h-4 mr-2" />}
+            {editingStaff ? 'Modifier le Compte' : 'Créer un Compte Staff'}
+          </h3>
+          <form onSubmit={handleSaveStaff} className="space-y-3">
             <input 
-              type="text" 
-              placeholder="Search for a product, brand, or treatment..." 
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="w-full bg-white text-sm text-black border border-gray-200 pl-10 pr-10 py-2.5 rounded-xl focus:outline-none focus:border-[#f68b1e] focus:ring-1 focus:ring-[#f68b1e] transition-all shadow-xs"
+              type="text" placeholder="Nom Complet" value={formData.fullName}
+              onChange={e => setFormData({...formData, fullName: e.target.value})}
+              className="w-full border p-2.5 text-xs rounded-lg outline-none focus:ring-2 focus:ring-slate-800 bg-gray-50 focus:bg-white transition-all"
             />
-            {searchTerm && (
-              <button onClick={() => {setSearchTerm(''); setCurrentPage(1);}} className="absolute right-3 p-1 rounded-full text-gray-400 hover:text-black hover:bg-gray-100 transition-colors">
-                <X className="w-3.5 h-3.5" />
+            <input 
+              type="password" placeholder="Code PIN (ex: 1234)" value={formData.pinCode}
+              onChange={e => setFormData({...formData, pinCode: e.target.value})}
+              className="w-full border p-2.5 text-xs rounded-lg outline-none focus:ring-2 focus:ring-slate-800 bg-gray-50 focus:bg-white transition-all"
+            />
+            <select 
+              value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})}
+              className="w-full border p-2.5 text-xs rounded-lg outline-none focus:ring-2 focus:ring-slate-800 bg-gray-50 focus:bg-white transition-all"
+            >
+              <option value="staff">Vendeur (Staff)</option>
+              <option value="admin">Administrateur</option>
+            </select>
+
+            {branches.length > 0 && (
+              <select 
+                value={formData.branchId} onChange={e => setFormData({...formData, branchId: e.target.value})}
+                className="w-full border p-2.5 text-xs rounded-lg outline-none focus:ring-2 focus:ring-slate-800 bg-gray-50 focus:bg-white transition-all"
+              >
+                <option value="">Succursale Global / Siège</option>
+                {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
+            )}
+
+            <div className="pt-2 flex flex-col gap-2">
+              <button type="submit" className={`w-full text-white text-xs font-bold py-2.5 rounded-lg uppercase transition-colors shadow-sm ${editingStaff ? 'bg-blue-600 hover:bg-blue-700' : 'bg-[#0f172a] hover:bg-slate-800'}`}>
+                {editingStaff ? 'Enregistrer les modifications' : 'Créer le compte'}
               </button>
-            )}
-          </div>
-        </div>
-
-        {isLoading ? (
-          <div className="flex justify-center py-20">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#f68b1e]"></div>
-          </div>
-        ) : currentProducts.length === 0 ? (
-          <div className="bg-white rounded-2xl p-16 text-center border border-gray-100">
-            <p className="text-gray-400 text-sm">No products found for the {storeBranch} branch.</p>
-          </div>
-        ) : (
-          <>
-            {/* PRODUCT GRID */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 mb-10">
-              {currentProducts.map((p) => {
-                const itemQtyInCart = getProductCartQty(p.id);
-
-                return (
-                  <div key={p.id} className="bg-white rounded-xl border border-gray-200/60 overflow-hidden flex flex-col justify-between group transition-all duration-300 hover:shadow-lg relative">
-                    <button className="absolute top-2 right-2 z-10 p-1.5 bg-white rounded-full shadow-sm text-gray-400 hover:text-red-500">
-                      <Heart className="w-3.5 h-3.5" />
-                    </button>
-                    <div className="relative bg-gray-50 aspect-[4/5] w-full overflow-hidden flex items-center justify-center border-b border-gray-100">
-                      <img src={p.image_url} alt={p.name} className="object-cover w-full h-full" />
-                      <div className="absolute bottom-2 left-2 z-10 flex flex-col gap-1">
-                        <span className="bg-[#f68b1e] text-white font-bold text-[10px] px-2 py-0.5 rounded shadow-md">
-                          {p.quantity} in stock
-                        </span>
-                      </div>
-                    </div>
-                    <div className="p-3 flex-1 flex flex-col justify-between bg-white">
-                      <div>
-                        <div className="flex items-center space-x-1 mb-1">
-                          <span className="font-extrabold text-xs text-zinc-900 group-hover:text-[#f68b1e] transition-colors">Donchike</span>
-                          <span className="text-blue-500 text-[10px] font-bold">✔</span>
-                        </div>
-                        <h3 className="text-sm md:text-base text-black line-clamp-2 min-h-[2.5rem] leading-tight font-extrabold">
-                          {p.name} {p.description && <span className="font-normal text-gray-500 text-xs">{p.description}</span>}
-                        </h3>
-                        <div className="flex items-center space-x-1 mt-1.5">
-                          <div className="flex text-amber-400">
-                            {[...Array(5)].map((_, i) => <Star key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />)}
-                          </div>
-                          <span className="text-[10px] text-gray-400 font-medium">(4.9)</span>
-                        </div>
-                      </div>
-                      <div className="mt-3">
-                        <p className="text-lg md:text-xl font-black text-[#f68b1e] tracking-tight mb-2">Price: {p.price?.toLocaleString()} FCFA</p>
-                        <div className="mt-2.5">
-                          {itemQtyInCart > 0 ? (
-                            <div className="flex items-center justify-between border border-[#f68b1e] rounded-lg overflow-hidden bg-white h-7 shadow-sm">
-                              <button onClick={() => changeQuantity(p, -1)} className="bg-[#f68b1e]/5 text-[#f68b1e] w-8 h-full flex items-center justify-center font-bold">-</button>
-                              <span className="w-full text-center text-xs font-black text-black">{itemQtyInCart}</span>
-                              <button onClick={() => changeQuantity(p, 1)} className="bg-[#f68b1e]/5 text-[#f68b1e] w-8 h-full flex items-center justify-center font-bold">+</button>
-                            </div>
-                          ) : (
-                            <button onClick={() => addToCart(p)} className="w-full bg-[#f68b1e] hover:bg-[#e07a16] text-white font-bold py-1.5 rounded-lg text-xs tracking-wide transition-all">
-                              Add to cart
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* PAGINATION CONTROLS */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-center space-x-1.5 pb-8">
-                <button 
-                  onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
-                  disabled={currentPage === 1}
-                  className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-bold text-gray-600 bg-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
-                >
-                  &larr; Previous
+              
+              {editingStaff && (
+                <button type="button" onClick={handleCancelEdit} className="w-full flex justify-center items-center gap-1.5 bg-gray-100 text-gray-600 hover:bg-gray-200 text-xs font-bold py-2.5 rounded-lg uppercase transition-colors">
+                  <XCircle className="w-3.5 h-3.5" /> Annuler l'édition
                 </button>
-                
-                <div className="flex items-center space-x-1 px-2">
-                  {[...Array(totalPages)].map((_, i) => {
-                    const pageNum = i + 1;
-                    const isActive = pageNum === currentPage;
-                    return (
-                      <button
-                        key={pageNum}
-                        onClick={() => handlePageChange(pageNum)}
-                        className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-black transition-colors ${
-                          isActive 
-                            ? 'bg-[#f68b1e] text-white shadow-sm border border-[#f68b1e]' 
-                            : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
-                        }`}
-                      >
-                        {pageNum}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <button 
-                  onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
-                  disabled={currentPage === totalPages}
-                  className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-bold text-gray-600 bg-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
-                >
-                  Next &rarr;
-                </button>
-              </div>
-            )}
-          </>
-        )}
-      </main>
-
-      {cartCount > 0 && (
-        <button onClick={() => setIsCartOpen(true)} className="fixed bottom-6 right-6 z-50 md:hidden bg-black text-white p-4 rounded-full shadow-2xl flex items-center justify-center space-x-2 active:scale-95 hover:bg-zinc-900 transition-all border border-zinc-800">
-          <ShoppingCart className="w-6 h-6 text-[#f68b1e]" />
-          <span className="bg-[#f68b1e] text-white text-xs font-black px-2 py-0.5 rounded-full">{cartCount}</span>
-        </button>
-      )}
-
-      {isCartOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex justify-end z-50">
-          <div className="w-full max-w-sm bg-white h-full p-5 flex flex-col justify-between shadow-xl">
-            <div>
-              <div className="flex justify-between items-center border-b pb-3 mb-4">
-                <h3 className="font-bold text-gray-900 uppercase text-xs">Your Cart ({cartCount})</h3>
-                <button onClick={() => setIsCartOpen(false)} className="text-gray-400 text-xl font-light">&times;</button>
-              </div>
-              {cart.length === 0 ? (
-                <p className="text-center text-gray-400 text-xs py-10">Your cart is empty.</p>
-              ) : (
-                <div className="space-y-3 overflow-y-auto max-h-[75vh]">
-                  {cart.map(item => (
-                    <div key={item.id} className="flex justify-between items-center bg-gray-50 p-2.5 rounded-lg border">
-                      <div className="flex items-center space-x-2.5">
-                        <img src={item.image_url} alt="" className="w-10 h-10 object-cover rounded bg-white border" />
-                        <div>
-                          <h4 className="text-sm font-extrabold text-black line-clamp-1">{item.name}</h4>
-                          <p className="text-sm font-black text-[#f68b1e]">Price: {item.price?.toLocaleString()} FCFA</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-1.5 bg-white border rounded p-0.5">
-                        <button onClick={() => changeQuantity(item, -1)} className="px-1.5 text-gray-500 font-bold">-</button>
-                        <span className="text-xs font-bold px-1 text-black">{item.quantity}</span>
-                        <button onClick={() => changeQuantity(item, 1)} className="px-1.5 text-gray-500 font-bold">+</button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
               )}
             </div>
-            {cart.length > 0 && (
-              <div className="border-t pt-3">
-                <div className="flex justify-between items-baseline font-bold mb-3">
-                  <span className="text-gray-400 text-xs uppercase">Total:</span>
-                  <span className="text-lg font-black text-black">Price: {cartTotal.toLocaleString()} FCFA</span>
-                </div>
-                <button onClick={handleWhatsAppCheckout} className="w-full bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-xl font-bold text-xs uppercase text-center block">
-                  Order via WhatsApp
+          </form>
+        </div>
+
+        {/* Staff List */}
+        <div className="lg:col-span-2 bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+          <div className="pb-2 border-b mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <h3 className="font-bold text-xs uppercase text-gray-700 flex items-center">
+              <span>Comptes Existants</span>
+            </h3>
+            <span className="text-[10px] text-orange-600 bg-orange-50 px-2 py-1 rounded-md flex items-center gap-1 font-semibold border border-orange-100">
+              <ShieldAlert className="w-3 h-3" /> Édition / Désactivation protégées par code PIN
+            </span>
+          </div>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs whitespace-nowrap">
+              <thead className="bg-gray-50 border-b">
+                <tr>
+                  <th className="p-3 font-semibold text-gray-600">Nom</th>
+                  <th className="p-3 font-semibold text-gray-600">Code PIN</th>
+                  <th className="p-3 font-semibold text-gray-600">Rôle</th>
+                  <th className="p-3 font-semibold text-gray-600">Statut</th>
+                  <th className="p-3 font-semibold text-gray-600 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {staffList.map(staff => (
+                  <tr key={staff.id} className="hover:bg-gray-50/50 transition-colors">
+                    <td className="p-3 font-bold text-gray-800">{staff.full_name}</td>
+                    <td className="p-3 font-mono text-gray-400 tracking-widest">••••</td>
+                    <td className="p-3">
+                      <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${staff.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600'}`}>
+                        {staff.role}
+                      </span>
+                    </td>
+                    <td className="p-3">
+                      {staff.is_active ? 
+                        <span className="text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-1 rounded flex items-center w-fit font-semibold"><UserCheck className="w-3 h-3 mr-1"/> Actif</span> : 
+                        <span className="text-red-700 bg-red-50 border border-red-100 px-2 py-1 rounded flex items-center w-fit font-semibold"><UserX className="w-3 h-3 mr-1"/> Inactif</span>
+                      }
+                    </td>
+                    <td className="p-3 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        {/* Bouton Modifier */}
+                        <button 
+                          onClick={() => handleStartEdit(staff)} 
+                          className="p-1.5 rounded-md bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-colors border border-blue-100 flex items-center gap-1 group"
+                          title="Modifier (PIN requis)"
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                        </button>
+                        
+                        {/* Bouton Activer/Désactiver */}
+                        {staff.role !== 'admin' && (
+                          <button 
+                            onClick={() => toggleStaffStatus(staff.id, staff.is_active)} 
+                            className={`p-1.5 rounded-md transition-colors border flex items-center gap-1 ${
+                              staff.is_active 
+                                ? 'bg-red-50 text-red-600 border-red-100 hover:bg-red-600 hover:text-white' 
+                                : 'bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-600 hover:text-white'
+                            }`}
+                            title={staff.is_active ? "Désactiver (PIN requis)" : "Activer (PIN requis)"}
+                          >
+                            {staff.is_active ? <UserX className="w-3.5 h-3.5" /> : <UserCheck className="w-3.5 h-3.5" />}
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* SECTION 2: PERFORMANCE TRACKING */}
+      <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+        <h3 className="font-bold text-xs uppercase text-gray-700 pb-2 border-b mb-4 flex items-center">
+          <Clock className="w-4 h-4 mr-2 text-orange-500" /> 
+          Ventes du Jour (Depuis 06:00 AM)
+        </h3>
+        
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          {Object.keys(todayStats).length > 0 ? Object.entries(todayStats).map(([name, data]) => (
+            <div key={name} className="p-4 border rounded-xl bg-orange-50/50 border-orange-100 text-center hover:shadow-md transition-shadow">
+              <p className="text-[10px] text-gray-500 font-bold uppercase">{name}</p>
+              <p className="text-lg font-black text-gray-800">{data.total.toLocaleString()} FCFA</p>
+              <p className="text-[10px] text-gray-400">{data.count} transaction(s)</p>
+            </div>
+          )) : (
+            <p className="text-xs text-gray-400 italic col-span-full bg-gray-50 p-3 rounded-lg border border-dashed">Aucune vente enregistrée depuis 6h00.</p>
+          )}
+        </div>
+
+        <h3 className="font-bold text-xs uppercase text-gray-700 pb-2 border-b mb-4 flex items-center mt-8">
+          <Folder className="w-4 h-4 mr-2 text-gray-500" /> Archives Mensuelles des Vendeurs
+        </h3>
+        <div className="space-y-3">
+          {Object.entries(monthlyArchives).length > 0 ? Object.entries(monthlyArchives).map(([monthKey, archive]) => {
+            const isOpen = expandedMonths[monthKey];
+            return (
+              <div key={monthKey} className="border rounded-xl overflow-hidden shadow-sm">
+                <button onClick={() => toggleMonth(monthKey)} className="w-full flex items-center justify-between p-3.5 bg-gray-50 hover:bg-gray-100 text-left transition-colors">
+                  <span className="font-black text-xs uppercase text-gray-700">{archive.label}</span>
+                  {isOpen ? <ChevronDown className="w-4 h-4 text-gray-500" /> : <ChevronRight className="w-4 h-4 text-gray-500" />}
+                </button>
+                {isOpen && (
+                  <div className="p-4 bg-white grid grid-cols-1 md:grid-cols-2 gap-3 border-t">
+                    {Object.entries(archive.staffData).map(([name, data]) => (
+                      <div key={name} className="flex justify-between items-center p-3 border rounded-lg bg-gray-50/50 hover:bg-white hover:border-gray-300 transition-colors">
+                        <span className="font-bold text-xs text-gray-800">{name}</span>
+                        <div className="text-right">
+                          <span className="block font-black text-sm text-gray-700">{data.total.toLocaleString()} FCFA</span>
+                          <span className="block text-[10px] text-gray-500">{data.count} ventes</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          }) : (
+            <p className="text-xs text-gray-400 italic bg-gray-50 p-3 rounded-lg border border-dashed">Aucune archive mensuelle disponible pour le moment.</p>
+          )}
+        </div>
+      </div>
+
+      {/* 🔒 MODAL DE SÉCURITÉ CODE PIN ADMIN */}
+      {isPinModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl max-w-sm w-full p-5 shadow-2xl border border-gray-100 animate-in fade-in zoom-in duration-150">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2.5 bg-amber-50 text-amber-600 rounded-lg border border-amber-100">
+                <Key className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-xs uppercase text-gray-800">Sécurité Administrateur</h3>
+                <p className="text-[11px] text-gray-500">Autorisation requise pour cette action</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleVerifyAdminPin} className="space-y-4">
+              <div>
+                <input
+                  type="password"
+                  autoFocus
+                  placeholder="••••"
+                  value={adminPinInput}
+                  onChange={(e) => setAdminPinInput(e.target.value)}
+                  className="w-full border p-3 text-center text-lg tracking-[0.3em] font-mono rounded-lg outline-none focus:ring-2 focus:ring-slate-800 bg-gray-50 focus:bg-white transition-all"
+                />
+                {pinError && (
+                  <p className="text-red-500 text-[11px] mt-2 font-medium text-center">{pinError}</p>
+                )}
+              </div>
+
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setIsPinModalOpen(false)}
+                  className="w-1/2 py-2.5 bg-gray-100 text-gray-600 hover:bg-gray-200 text-xs font-bold rounded-lg uppercase transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="w-1/2 py-2.5 bg-[#0f172a] text-white hover:bg-slate-800 text-xs font-bold rounded-lg uppercase transition-colors shadow-sm"
+                >
+                  Valider
                 </button>
               </div>
-            )}
+            </form>
           </div>
         </div>
       )}
+
     </div>
   );
 }
