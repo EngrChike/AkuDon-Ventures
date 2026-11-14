@@ -30,18 +30,18 @@ export default function App() {
         .from('staff')
         .select('*')
         .eq('pin_code', pinInput)
-        .single();
+        .maybeSingle();
 
       if (error || !data) {
-        setLoginError('Code PIN incorrect.');
+        setLoginError('Incorrect PIN code.');
       } else if (!data.is_active) {
-        setLoginError('Ce compte a été désactivé. Veuillez contacter un administrateur.');
+        setLoginError('This account has been deactivated. Please contact an administrator.');
       } else {
         setCurrentUser(data);
         setPinInput('');
       }
     } catch (err) {
-      setLoginError('Erreur de connexion au serveur.');
+      setLoginError('Server connection error.');
     } finally {
       setIsLoading(false);
     }
@@ -65,8 +65,8 @@ export default function App() {
           </div>
           
           <div>
-            <h2 className="text-xl font-black text-gray-800">Accès Restreint</h2>
-            <p className="text-xs text-gray-500 mt-1">Veuillez entrer votre code PIN</p>
+            <h2 className="text-xl font-black text-gray-800">Restricted Access</h2>
+            <p className="text-xs text-gray-500 mt-1">Please enter your PIN code</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-4">
@@ -89,7 +89,7 @@ export default function App() {
               disabled={isLoading || !pinInput}
               className="w-full bg-black hover:bg-gray-800 disabled:bg-gray-300 text-white font-bold py-3 rounded-xl uppercase text-xs tracking-wider transition-colors"
             >
-              {isLoading ? 'Vérification...' : 'Se Connecter'}
+              {isLoading ? 'Verifying...' : 'Log In'}
             </button>
           </form>
           
@@ -97,7 +97,7 @@ export default function App() {
             onClick={() => window.location.hash = ''} 
             className="text-xs text-gray-400 hover:text-gray-600 underline"
           >
-            Retour à la boutique publique
+            Back to public storefront
           </button>
         </div>
       </div>
@@ -105,7 +105,7 @@ export default function App() {
   }
 
   return (
-    <div className="relative min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col">
       <div className="bg-black text-white text-xs px-4 py-2.5 flex justify-between items-center z-50">
         <div className="flex items-center space-x-3">
           <span className="font-bold">{currentUser.full_name}</span>
@@ -120,7 +120,7 @@ export default function App() {
           className="flex items-center space-x-1.5 hover:text-orange-400 transition-colors font-bold"
         >
           <LogOut className="w-3.5 h-3.5" />
-          <span>Déconnexion</span>
+          <span>Logout</span>
         </button>
       </div>
       
