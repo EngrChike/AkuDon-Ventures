@@ -9,14 +9,15 @@ import {
   ListFilter, 
   ShieldCheck, 
   Globe, 
-  ArrowLeftRight, 
   ShieldAlert, 
-  Wallet, 
-  BarChart3, 
-  TrendingUp, 
-  History,
-  Store,
-  Sparkles
+  Sparkles,
+  Receipt,
+  PlusCircle,
+  Trash2,
+  Calendar,
+  Tag,
+  TrendingDown,
+  Scale
 } from 'lucide-react';
 import SalesLedger from './SalesLedger';
 import InventoryManagement from './components/InventoryManagement';
@@ -24,6 +25,17 @@ import BranchManagement from './components/BranchManagement';
 import BatchTransferModal from './components/BatchTransferModal';
 import TransferHistoryModal from './components/TransferHistoryModal';
 import StaffManagement from './StaffManagement';
+
+const EXPENSE_CATEGORIES = [
+  'Rent & Utilities',
+  'Restock & Logistics',
+  'Staff & Wages',
+  'Marketing & Ads',
+  'Packaging & Supplies',
+  'Maintenance & Repairs',
+  'Taxes & Fees',
+  'General'
+];
 
 export default function AdminApp({ currentUser, supabase }) {
   const isAdmin = currentUser?.role === 'admin';
@@ -36,7 +48,19 @@ export default function AdminApp({ currentUser, supabase }) {
   const [staffList, setStaffList] = useState([]);
   const [branches, setBranches] = useState([]);
   const [transferLogs, setTransferLogs] = useState([]);
+  const [expenses, setExpenses] = useState([]);
   
+  // Expenses Form & Filter States
+  const [expenseTitle, setExpenseTitle] = useState('');
+  const [expenseCategory, setExpenseCategory] = useState('General');
+  const [expenseAmount, setExpenseAmount] = useState('');
+  const [expenseDate, setExpenseDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [expenseBranchId, setExpenseBranchId] = useState('');
+  const [expenseNotes, setExpenseNotes] = useState('');
+  const [expenseSearch, setExpenseSearch] = useState('');
+  const [expenseCategoryFilter, setExpenseCategoryFilter] = useState('ALL');
+  const [savingExpense, setSavingExpense] = useState(false);
+
   // Privacy / Financial Visibility States
   const [showFinancials, setShowFinancials] = useState(false);
   const autoHideTimerRef = useRef(null);
@@ -47,7 +71,7 @@ export default function AdminApp({ currentUser, supabase }) {
   const [adminPinResolve, setAdminPinResolve] = useState(null);
   const [adminPinError, setAdminPinError] = useState('');
 
-  // Branch Context Filters & Low Stock Filter State
+  // Branch Context Filters & Critical Stock Filter State
   const [viewingBranch, setViewingBranch] = useState(''); 
   const [selectedBatchFilter, setSelectedBatchFilter] = useState('ALL');
   const [showArchived, setShowArchived] = useState(false);
@@ -115,6 +139,7 @@ export default function AdminApp({ currentUser, supabase }) {
     fetchProducts();
     fetchCustomersFromSupabase();
     fetchTransferLogs();
+    fetchExpensesFromSupabase();
     if (isAdmin) {
       fetchStaffFromSupabase();
       fetchStoreSettings(); 
@@ -124,10 +149,86 @@ export default function AdminApp({ currentUser, supabase }) {
   useEffect(() => {
     if (viewingBranch !== 'ALL') {
       setProductBranch(viewingBranch);
+      setExpenseBranchId(viewingBranch);
     } else {
       setProductBranch('');
+      setExpenseBranchId('');
     }
   }, [viewingBranch]);
+
+  const fetchExpensesFromSupabase = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('expenses')
+        .select('*')
+        .order('expense_date', { ascending: false })
+        .order('created_at', { ascending: false });
+      if (!error && data) {
+        setExpenses(data);
+      }
+    } catch (err) {
+      console.log("Expenses table optional initialization:", err);
+    }
+  };
+
+  const handleAddExpense = async (e) => {
+    e.preventDefault();
+    const parsedAmount = parseFloat(expenseAmount);
+    if (!expenseTitle.trim() || isNaN(parsedAmount) || parsedAmount <= 0) {
+      alert("Please enter a valid expense title and an amount greater than #0.");
+      return;
+    }
+
+    setSavingExpense(true);
+    try {
+      const payload = {
+        title: expenseTitle.trim(),
+        category: expenseCategory,
+        amount: parsedAmount,
+        notes: expenseNotes.trim() || null,
+        expense_date: expenseDate || new Date().toISOString().split('T')[0],
+        branch_id: expenseBranchId || null,
+        recorded_by: currentUser?.full_name || 'Admin'
+      };
+
+      const { data, error } = await supabase
+        .from('expenses')
+        .insert([payload])
+        .select();
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        setExpenses(prev => [data[0], ...prev]);
+      } else {
+        await fetchExpensesFromSupabase();
+      }
+
+      setExpenseTitle('');
+      setExpenseAmount('');
+      setExpenseNotes('');
+      setExpenseCategory('General');
+      alert("Expense recorded and deducted from business finances.");
+    } catch (err) {
+      alert(`Error saving expense: ${err.message}`);
+    } finally {
+      setSavingExpense(false);
+    }
+  };
+
+  const handleDeleteExpense = async (expenseId) => {
+    if (!(await verifyAdminPinBeforeAction())) return;
+    if (!window.confirm("Delete this expense record? This will restore the amount to net business finances.")) return;
+
+    try {
+      const { error } = await supabase.from('expenses').delete().eq('id', expenseId);
+      if (error) throw error;
+      setExpenses(prev => prev.filter(exp => String(exp.id) !== String(expenseId)));
+      alert("Expense deleted.");
+    } catch (err) {
+      alert(`Error deleting expense: ${err.message}`);
+    }
+  };
 
   const fetchStoreSettings = async () => {
     try {
@@ -136,7 +237,7 @@ export default function AdminApp({ currentUser, supabase }) {
         .select('active_branch')
         .single();
       
-      if (data) {
+      if (!error && data) {
         setLiveStoreBranch(data.active_branch || '');
       }
     } catch (err) {
@@ -322,7 +423,9 @@ export default function AdminApp({ currentUser, supabase }) {
 
   const formatMoney = (amount) => {
     if (!showFinancials) return '******';
-    return `#${(amount || 0).toLocaleString()}`;
+    const numeric = Number(amount) || 0;
+    const prefix = numeric < 0 ? '-#' : '#';
+    return `${prefix}${Math.abs(numeric).toLocaleString()}`;
   };
 
   const handleSaveBranch = async (e) => {
@@ -375,10 +478,10 @@ export default function AdminApp({ currentUser, supabase }) {
   const handleStartEditStaff = async (staffMember) => {
     if (!(await verifyAdminPinBeforeAction())) return;
     setEditingStaff(staffMember);
-    setStaffName(staffMember.full_name || '');
-    setStaffPin(staffMember.pin_code || '');
-    setStaffRole(staffMember.role || 'staff');
-    setStaffBranch(staffMember.branch_id || '');
+    setStaffName(String(staffMember.full_name || ''));
+    setStaffPin(String(staffMember.pin_code || ''));
+    setStaffRole(String(staffMember.role || 'staff'));
+    setStaffBranch(String(staffMember.branch_id || ''));
     setActiveTab('staff');
   };
 
@@ -662,9 +765,21 @@ export default function AdminApp({ currentUser, supabase }) {
   };
 
   const handleStartEditProduct = (p) => {
-    setEditingProduct(p); setName(p.name); setPrice(p.price); setCostPrice(p.cost_price || '');
-    setQuantity(p.quantity); setInitialQuantity(p.initial_quantity !== undefined ? p.initial_quantity : p.quantity);
-    setDescription(p.description || ''); setBatch(p.batch_reference || ''); setProductBranch(p.branch_id || '');
+    if (!p) return;
+    setEditingProduct(p);
+    setName(String(p.name || ''));
+    setPrice(p.price !== undefined && p.price !== null ? String(p.price) : '');
+    setCostPrice(p.cost_price !== undefined && p.cost_price !== null ? String(p.cost_price) : '');
+    setQuantity(p.quantity !== undefined && p.quantity !== null ? String(p.quantity) : '');
+    setInitialQuantity(
+      p.initial_quantity !== undefined && p.initial_quantity !== null
+        ? String(p.initial_quantity)
+        : (p.quantity !== undefined ? String(p.quantity) : '')
+    );
+    setDescription(String(p.description || ''));
+    setBatch(String(p.batch_reference || ''));
+    setImageFile(null);
+    setProductBranch(String(p.branch_id || ''));
   };
 
   const handleCancelEditProduct = () => {
@@ -694,7 +809,13 @@ export default function AdminApp({ currentUser, supabase }) {
     return String(c.branch_id || '') === String(activeBranchId);
   });
 
-  const lowStockProducts = contextProducts.filter(p => !p.is_archived && (parseInt(p.quantity) || 0) <= 3);
+  const contextExpenses = expenses.filter(exp => {
+    if (activeBranchId === 'ALL' || activeBranchId === '') return true;
+    return String(exp.branch_id || '') === String(activeBranchId);
+  });
+
+  // Critical stock threshold set to 0
+  const lowStockProducts = contextProducts.filter(p => !p.is_archived && (parseInt(p.quantity) || 0) <= 0);
   const hasLowStock = lowStockProducts.length > 0;
 
   const totalSalesRevenue = contextCustomers.reduce((acc, c) => {
@@ -763,6 +884,11 @@ export default function AdminApp({ currentUser, supabase }) {
     return acc + Math.max(directDebt, historyDebt);
   }, 0);
 
+  const totalExpenses = contextExpenses.reduce((acc, exp) => acc + (parseFloat(exp.amount) || 0), 0);
+
+  // Net Profit after COGS and Expenses
+  const netBusinessProfit = (totalSalesRevenue - totalGoodsSoldCost) - totalExpenses;
+
   const getProductSoldQty = (productId) => {
     return contextCustomers.reduce((acc, c) => acc + (c.history || []).reduce((hAcc, h) => {
       if (h.items && Array.isArray(h.items) && h.items.length > 0) {
@@ -788,9 +914,21 @@ export default function AdminApp({ currentUser, supabase }) {
   const filteredProducts = contextProducts.filter(p => {
     const matchesBatch = selectedBatchFilter === 'ALL' || p.batch_reference === selectedBatchFilter;
     const matchesArchiveState = showArchived ? p.is_archived : !p.is_archived;
-    const matchesLowStock = showLowStockOnly ? (parseInt(p.quantity) || 0) <= 3 : true;
+    const matchesLowStock = showLowStockOnly ? (parseInt(p.quantity) || 0) <= 0 : true;
     return matchesBatch && matchesArchiveState && matchesLowStock;
   });
+
+  const filteredExpenses = contextExpenses.filter(exp => {
+    const matchesCategory = expenseCategoryFilter === 'ALL' || exp.category === expenseCategoryFilter;
+    const query = expenseSearch.trim().toLowerCase();
+    const matchesSearch = !query ||
+      String(exp.title || '').toLowerCase().includes(query) ||
+      String(exp.notes || '').toLowerCase().includes(query) ||
+      String(exp.category || '').toLowerCase().includes(query);
+    return matchesCategory && matchesSearch;
+  });
+
+  const filteredExpensesTotal = filteredExpenses.reduce((acc, exp) => acc + (parseFloat(exp.amount) || 0), 0);
 
   const storefrontFilteredProducts = products.filter(p => {
     if (p.is_archived || parseInt(p.quantity) < 1) return false;
@@ -802,6 +940,12 @@ export default function AdminApp({ currentUser, supabase }) {
 
   const hqProductsForTransfer = products.filter(p => (!p.branch_id || p.branch_id === '') && !p.is_archived && parseInt(p.quantity) > 0);
   const activeSelectedArray = Object.values(selectedBatchItems).filter(i => i.selected);
+
+  const getBranchNameById = (branchId) => {
+    if (!branchId) return 'Main HQ';
+    const found = branches.find(b => String(b.id) === String(branchId));
+    return found ? found.name : 'Branch';
+  };
 
   return (
     <div className="bg-[#f8fafc] text-slate-900 font-sans p-4 sm:p-6 lg:p-8 min-h-screen selection:bg-slate-900 selection:text-white">
@@ -835,6 +979,18 @@ export default function AdminApp({ currentUser, supabase }) {
                 >
                   <UsersRound className="w-4 h-4 text-blue-400" /> 
                   <span>Sales Ledger</span>
+                </button>
+
+                <button 
+                  onClick={() => setActiveTab('expenses')} 
+                  className={`px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl flex items-center space-x-2 transition-all duration-200 cursor-pointer ${
+                    activeTab === 'expenses' 
+                      ? 'bg-slate-900 text-white shadow-md shadow-slate-900/10' 
+                      : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                  }`}
+                >
+                  <Receipt className="w-4 h-4 text-rose-400" /> 
+                  <span>Expenses</span>
                 </button>
 
                 <button 
@@ -875,7 +1031,7 @@ export default function AdminApp({ currentUser, supabase }) {
               </div>
 
               <div className="flex items-center gap-3">
-                {/* LOW STOCK ALERT BUTTON */}
+                {/* CRITICAL OUT-OF-STOCK ALERT BUTTON (0) */}
                 <button 
                   onClick={() => {
                     setActiveTab('inventory');
@@ -888,13 +1044,13 @@ export default function AdminApp({ currentUser, supabase }) {
                           : 'bg-rose-600 text-white animate-pulse ring-2 ring-rose-300')
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
-                  title={hasLowStock ? `${lowStockProducts.length} product(s) in critical stock (≤ 3)` : 'Normal stock'}
+                  title={hasLowStock ? `${lowStockProducts.length} product(s) out of stock (0)` : 'No products at 0 stock'}
                 >
                   <ShieldAlert className={`w-4 h-4 ${hasLowStock ? 'text-amber-200 animate-bounce' : 'text-slate-400'}`} />
                   <span>
                     {showLowStockOnly 
-                      ? `Low Stock: ${lowStockProducts.length}` 
-                      : `Critical: ${lowStockProducts.length}`}
+                      ? `Out of Stock: ${lowStockProducts.length}` 
+                      : `Critical (0): ${lowStockProducts.length}`}
                   </span>
                 </button>
 
@@ -931,7 +1087,7 @@ export default function AdminApp({ currentUser, supabase }) {
           <div className="space-y-3">
             <div className="flex justify-between items-center px-1">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-slate-400" /> Financial Performance & Dashboards
+                <ShieldCheck className="w-4 h-4 text-slate-400" /> Financial Performance & Dashboards (Expenses Deducted)
               </span>
               <button
                 onClick={handleToggleFinancialVisibility}
@@ -951,35 +1107,47 @@ export default function AdminApp({ currentUser, supabase }) {
               </button>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-              <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all duration-200 group">
-                <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Asset Cost</p>
-                <p className="text-base sm:text-lg font-black text-slate-900 mt-2 tracking-tight">{formatMoney(totalInventoryCost)}</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3 sm:gap-4">
+              <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all duration-200">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Asset Cost</p>
+                <p className="text-sm sm:text-base font-black text-slate-900 mt-1.5 tracking-tight">{formatMoney(totalInventoryCost)}</p>
               </div>
 
-              <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all duration-200 group">
-                <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-indigo-500">Expected Revenue</p>
-                <p className="text-base sm:text-lg font-black text-indigo-600 mt-2 tracking-tight">{formatMoney(totalExpectedRevenue)}</p>
+              <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all duration-200">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-500">Expected Revenue</p>
+                <p className="text-sm sm:text-base font-black text-indigo-600 mt-1.5 tracking-tight">{formatMoney(totalExpectedRevenue)}</p>
               </div>
 
-              <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all duration-200 group">
-                <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-emerald-500">Stock Value</p>
-                <p className="text-base sm:text-lg font-black text-emerald-600 mt-2 tracking-tight">{formatMoney(totalPotentialRetail)}</p>
+              <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all duration-200">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-500">Stock Value</p>
+                <p className="text-sm sm:text-base font-black text-emerald-600 mt-1.5 tracking-tight">{formatMoney(totalPotentialRetail)}</p>
               </div>
 
-              <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all duration-200 group">
-                <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-purple-500">COGS (Sold Cost)</p>
-                <p className="text-base sm:text-lg font-black text-purple-600 mt-2 tracking-tight">{formatMoney(totalGoodsSoldCost)}</p>
+              <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all duration-200">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-purple-500">COGS (Sold Cost)</p>
+                <p className="text-sm sm:text-base font-black text-purple-600 mt-1.5 tracking-tight">{formatMoney(totalGoodsSoldCost)}</p>
               </div>
 
-              <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all duration-200 group">
-                <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-blue-500">Total Sales (Rev)</p>
-                <p className="text-base sm:text-lg font-black text-blue-600 mt-2 tracking-tight">{formatMoney(totalSalesRevenue)}</p>
+              <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all duration-200">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-blue-500">Total Sales (Rev)</p>
+                <p className="text-sm sm:text-base font-black text-blue-600 mt-1.5 tracking-tight">{formatMoney(totalSalesRevenue)}</p>
               </div>
 
-              <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all duration-200 border-t-4 border-t-rose-500 group">
-                <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-rose-500">Outstanding Debts</p>
-                <p className="text-base sm:text-lg font-black text-rose-600 mt-2 tracking-tight">{formatMoney(totalOutstandingDebt)}</p>
+              <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all duration-200 border-t-4 border-t-amber-500">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-amber-600">Total Expenses</p>
+                <p className="text-sm sm:text-base font-black text-amber-700 mt-1.5 tracking-tight">{formatMoney(totalExpenses)}</p>
+              </div>
+
+              <div className={`bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all duration-200 border-t-4 ${netBusinessProfit >= 0 ? 'border-t-emerald-500' : 'border-t-rose-600'}`}>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Net Profit (After Exp.)</p>
+                <p className={`text-sm sm:text-base font-black mt-1.5 tracking-tight ${netBusinessProfit >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>
+                  {formatMoney(netBusinessProfit)}
+                </p>
+              </div>
+
+              <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all duration-200 border-t-4 border-t-rose-500">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-rose-500">Outstanding Debts</p>
+                <p className="text-sm sm:text-base font-black text-rose-600 mt-1.5 tracking-tight">{formatMoney(totalOutstandingDebt)}</p>
               </div>
             </div>
           </div>
@@ -1038,9 +1206,9 @@ export default function AdminApp({ currentUser, supabase }) {
             handleUpdateStockVolume={handleUpdateStockVolume}
             handleStartEditProduct={handleStartEditProduct}
             handleArchiveProduct={handleArchiveProduct}
-            supabase={supabase}                     // 👈 Injected supabase client prop
-            verifyAdminPinBeforeAction={verifyAdminPinBeforeAction} // 👈 Injected PIN verification prop
-            setProducts={setProducts}               // 👈 Injected state setter for immediate UI removal
+            supabase={supabase}
+            verifyAdminPinBeforeAction={verifyAdminPinBeforeAction}
+            setProducts={setProducts}
           />
         )}
 
@@ -1055,6 +1223,239 @@ export default function AdminApp({ currentUser, supabase }) {
             currentUser={currentUser}
             activeBranchId={activeBranchId} 
           />
+        )}
+
+        {/* TAB 3B: EXPENSES & FINANCIAL REVIEW */}
+        {isAdmin && activeTab === 'expenses' && (
+          <div className="space-y-6">
+            {/* Financial Impact Overview Banner */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Gross Sales Revenue</p>
+                  <p className="text-xl font-black text-blue-600 mt-1">{formatMoney(totalSalesRevenue)}</p>
+                </div>
+                <div className="w-11 h-11 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                  <Receipt className="w-5 h-5" />
+                </div>
+              </div>
+
+              <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-amber-600">Deducted Expenses</p>
+                  <p className="text-xl font-black text-amber-700 mt-1">-{formatMoney(totalExpenses)}</p>
+                </div>
+                <div className="w-11 h-11 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                  <TrendingDown className="w-5 h-5" />
+                </div>
+              </div>
+
+              <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Net Position (Sales - COGS - Exp.)</p>
+                  <p className={`text-xl font-black mt-1 ${netBusinessProfit >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>
+                    {formatMoney(netBusinessProfit)}
+                  </p>
+                </div>
+                <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${netBusinessProfit >= 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
+                  <Scale className="w-5 h-5" />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Expense Entry Form */}
+              <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/80 shadow-sm h-fit">
+                <h3 className="text-xs font-black uppercase tracking-wider text-slate-800 pb-3 border-b border-slate-100 mb-4 flex items-center gap-2">
+                  <PlusCircle className="w-4 h-4 text-rose-500" />
+                  Record New Expense
+                </h3>
+
+                <form onSubmit={handleAddExpense} className="space-y-3.5">
+                  <div>
+                    <label className="block text-[10px] font-black uppercase text-slate-400 mb-1">Expense Title</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g., Shop Generator Fuel, Packaging Cartons"
+                      value={expenseTitle}
+                      onChange={(e) => setExpenseTitle(e.target.value)}
+                      className="w-full border border-slate-200 p-2.5 text-xs rounded-xl outline-none focus:ring-2 focus:ring-slate-900 bg-slate-50 focus:bg-white transition-all font-medium"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[10px] font-black uppercase text-slate-400 mb-1">Amount (#)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0.01"
+                        required
+                        placeholder="0.00"
+                        value={expenseAmount}
+                        onChange={(e) => setExpenseAmount(e.target.value)}
+                        className="w-full border border-slate-200 p-2.5 text-xs rounded-xl outline-none focus:ring-2 focus:ring-slate-900 bg-slate-50 focus:bg-white transition-all font-mono font-bold"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-black uppercase text-slate-400 mb-1">Date</label>
+                      <input
+                        type="date"
+                        required
+                        value={expenseDate}
+                        onChange={(e) => setExpenseDate(e.target.value)}
+                        className="w-full border border-slate-200 p-2.5 text-xs rounded-xl outline-none focus:ring-2 focus:ring-slate-900 bg-slate-50 focus:bg-white transition-all font-medium"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[10px] font-black uppercase text-slate-400 mb-1">Category</label>
+                      <select
+                        value={expenseCategory}
+                        onChange={(e) => setExpenseCategory(e.target.value)}
+                        className="w-full border border-slate-200 p-2.5 text-xs rounded-xl outline-none focus:ring-2 focus:ring-slate-900 bg-slate-50 focus:bg-white transition-all font-medium cursor-pointer"
+                      >
+                        {EXPENSE_CATEGORIES.map(cat => (
+                          <option key={cat} value={cat}>{cat}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-black uppercase text-slate-400 mb-1">Branch / HQ</label>
+                      <select
+                        value={expenseBranchId}
+                        onChange={(e) => setExpenseBranchId(e.target.value)}
+                        className="w-full border border-slate-200 p-2.5 text-xs rounded-xl outline-none focus:ring-2 focus:ring-slate-900 bg-slate-50 focus:bg-white transition-all font-medium cursor-pointer"
+                      >
+                        <option value="">Main Headquarters (HQ)</option>
+                        {branches.map(b => (
+                          <option key={b.id} value={b.id}>{b.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-black uppercase text-slate-400 mb-1">Notes / Receipt Reference (Optional)</label>
+                    <textarea
+                      rows={2}
+                      placeholder="Receipt number, vendor name, or payment details..."
+                      value={expenseNotes}
+                      onChange={(e) => setExpenseNotes(e.target.value)}
+                      className="w-full border border-slate-200 p-2.5 text-xs rounded-xl outline-none focus:ring-2 focus:ring-slate-900 bg-slate-50 focus:bg-white transition-all font-medium resize-none"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={savingExpense}
+                    className="w-full bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white text-xs font-bold py-3 rounded-xl uppercase tracking-wide shadow-md shadow-slate-900/10 transition-all cursor-pointer active:scale-95"
+                  >
+                    {savingExpense ? 'Recording Expense...' : 'Save & Deduct Expense'}
+                  </button>
+                </form>
+              </div>
+
+              {/* Expenses Review Ledger */}
+              <div className="lg:col-span-2 bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                  <div>
+                    <h3 className="text-xs font-black uppercase tracking-wider text-slate-800">
+                      Expenses Review Ledger ({filteredExpenses.length})
+                    </h3>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      Filtered Total: <span className="font-bold text-rose-600">{formatMoney(filteredExpensesTotal)}</span>
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    <input
+                      type="text"
+                      placeholder="Search expenses..."
+                      value={expenseSearch}
+                      onChange={(e) => setExpenseSearch(e.target.value)}
+                      className="border border-slate-200 px-3 py-1.5 text-xs rounded-xl outline-none focus:ring-2 focus:ring-slate-900 bg-slate-50 focus:bg-white"
+                    />
+                    <select
+                      value={expenseCategoryFilter}
+                      onChange={(e) => setExpenseCategoryFilter(e.target.value)}
+                      className="border border-slate-200 px-3 py-1.5 text-xs rounded-xl outline-none focus:ring-2 focus:ring-slate-900 bg-slate-50 font-semibold text-slate-700 cursor-pointer"
+                    >
+                      <option value="ALL">All Categories</option>
+                      {EXPENSE_CATEGORIES.map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {filteredExpenses.length === 0 ? (
+                  <div className="text-center py-12 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                    <Receipt className="w-9 h-9 text-slate-300 mx-auto mb-2" />
+                    <p className="text-xs font-bold text-slate-600">No expenses found for the current filter</p>
+                    <p className="text-[11px] text-slate-400 mt-1">Use the form on the left to record a new business expense.</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-50/80 border-b border-slate-100">
+                        <tr>
+                          <th className="p-3 font-bold text-slate-500 uppercase text-[10px]">Date</th>
+                          <th className="p-3 font-bold text-slate-500 uppercase text-[10px]">Expense & Notes</th>
+                          <th className="p-3 font-bold text-slate-500 uppercase text-[10px]">Category</th>
+                          <th className="p-3 font-bold text-slate-500 uppercase text-[10px]">Branch</th>
+                          <th className="p-3 font-bold text-slate-500 uppercase text-[10px] text-right">Amount</th>
+                          <th className="p-3 font-bold text-slate-500 uppercase text-[10px] text-right">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {filteredExpenses.map((exp) => (
+                          <tr key={exp.id} className="hover:bg-slate-50/60 transition-colors">
+                            <td className="p-3 whitespace-nowrap text-slate-600 font-mono text-[11px]">
+                              <span className="inline-flex items-center gap-1">
+                                <Calendar className="w-3 h-3 text-slate-400" />
+                                {exp.expense_date || (exp.created_at ? new Date(exp.created_at).toISOString().split('T')[0] : '—')}
+                              </span>
+                            </td>
+                            <td className="p-3">
+                              <p className="font-bold text-slate-900">{exp.title}</p>
+                              {exp.notes && <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-1">{exp.notes}</p>}
+                            </td>
+                            <td className="p-3 whitespace-nowrap">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-100 text-slate-700">
+                                <Tag className="w-3 h-3 text-slate-400" />
+                                {exp.category || 'General'}
+                              </span>
+                            </td>
+                            <td className="p-3 whitespace-nowrap text-slate-600 font-medium">
+                              {getBranchNameById(exp.branch_id)}
+                            </td>
+                            <td className="p-3 whitespace-nowrap text-right font-black text-rose-600">
+                              -{formatMoney(exp.amount)}
+                            </td>
+                            <td className="p-3 whitespace-nowrap text-right">
+                              <button
+                                onClick={() => handleDeleteExpense(exp.id)}
+                                className="p-1.5 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white transition-colors cursor-pointer"
+                                title="Delete expense (Admin PIN required)"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         )}
 
         {/* TAB 4: STOREFRONT PREVIEW & GLOBAL STORE CONTROL */}
@@ -1232,13 +1633,20 @@ export default function AdminApp({ currentUser, supabase }) {
 
             <form onSubmit={(e) => {
               e.preventDefault();
+              if (document.activeElement instanceof HTMLElement) {
+                document.activeElement.blur();
+              }
               const verifyingAdmin = staffList.find(s => s.pin_code === adminPinInput && s.role === 'admin' && s.is_active);
               if (!verifyingAdmin) {
                 setAdminPinError("Incorrect PIN code or insufficient privileges.");
                 return;
               }
               setAdminPinModalOpen(false);
-              if (adminPinResolve) adminPinResolve(true);
+              const resolver = adminPinResolve;
+              setAdminPinResolve(null);
+              setTimeout(() => {
+                if (resolver) resolver(true);
+              }, 100);
             }} className="space-y-4">
               <div>
                 <input 
@@ -1263,7 +1671,9 @@ export default function AdminApp({ currentUser, supabase }) {
                   type="button"
                   onClick={() => {
                     setAdminPinModalOpen(false);
-                    if (adminPinResolve) adminPinResolve(false);
+                    const resolver = adminPinResolve;
+                    setAdminPinResolve(null);
+                    if (resolver) resolver(false);
                   }}
                   className="flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-2xl text-xs sm:text-sm transition-all cursor-pointer active:scale-95"
                 >

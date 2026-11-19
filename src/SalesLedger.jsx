@@ -137,6 +137,9 @@ export default function SalesLedger({ products, customers, fetchProducts, fetchC
   // 🔒 PIN Submission and Verification inside Modal
   const handleVerifyAdminPin = (e) => {
     e.preventDefault();
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
     const verifyingAdmin = staffList.find(s => s.pin_code === adminPinInput.trim() && s.role === 'admin' && s.is_active);
 
     if (!verifyingAdmin) {
@@ -145,10 +148,11 @@ export default function SalesLedger({ products, customers, fetchProducts, fetchC
     }
 
     setIsPinModalOpen(false);
-    if (pendingAction) {
-      pendingAction();
-      setPendingAction(null);
-    }
+    const callback = pendingAction;
+    setPendingAction(null);
+    setTimeout(() => {
+      if (callback) callback();
+    }, 100);
   };
 
   // --- CUSTOMER EDIT & DELETE HANDLERS ---
@@ -350,7 +354,7 @@ export default function SalesLedger({ products, customers, fetchProducts, fetchC
       if (editingSale) await revertSaleStockAndDebt(editingSale);
 
       const balance = remainingDebt;
-      const goodsDescription = cartItems.map(item => `${item.qty}x ${item.name} (${item.batch}) @ CFA ${item.price}`).join(', ');
+      const goodsDescription = cartItems.map(item => `${item.qty}x ${item.name} (${item.batch}) @ #${item.price}`).join(', ');
       
       const now = new Date();
       const currentDate = now.toLocaleDateString();
@@ -653,7 +657,7 @@ export default function SalesLedger({ products, customers, fetchProducts, fetchC
               <option value="new">+ Register New Customer (Credit/Debt Account)</option>
               {customers.map(c => (
                 <option key={c.id} value={c.id}>
-                  👤 {c.name} {c.phone ? `(${c.phone})` : ''} - Debt: CFA {c.totalDebt?.toLocaleString()}
+                  👤 {c.name} {c.phone ? `(${c.phone})` : ''} - Debt: #{c.totalDebt?.toLocaleString()}
                 </option>
               ))}
             </select>
@@ -705,7 +709,7 @@ export default function SalesLedger({ products, customers, fetchProducts, fetchC
                           )}
                           <div className="flex-1 min-w-0">
                             <div className="font-bold text-xs text-gray-800 truncate">{p.name}</div>
-                            <div className="text-[9px] text-gray-500">[{p.batch_reference || 'N/A'}] - <span className="font-semibold text-emerald-600">CFA {p.price?.toLocaleString()}</span> (Stock: {p.quantity})</div>
+                            <div className="text-[9px] text-gray-500">[{p.batch_reference || 'N/A'}] - <span className="font-semibold text-emerald-600">#{p.price?.toLocaleString()}</span> (Stock: {p.quantity})</div>
                           </div>
                         </div>
                       ))
@@ -722,7 +726,7 @@ export default function SalesLedger({ products, customers, fetchProducts, fetchC
                   <input type="number" min="1" placeholder="Qty" value={cartQty} onChange={e => setCartQty(e.target.value)} className="w-full border p-2 text-xs rounded-lg bg-white text-center font-bold" />
                 </div>
                 <div>
-                  <label className="text-[9px] text-orange-600 font-bold block mb-0.5">Unit Price (CFA)</label>
+                  <label className="text-[9px] text-orange-600 font-bold block mb-0.5">Unit Price (#)</label>
                   <input type="number" placeholder="Price" value={customPrice} onChange={e => setCustomPrice(e.target.value)} className="w-full border border-orange-300 p-2 text-xs rounded-lg bg-white text-right font-bold text-orange-700" />
                 </div>
               </div>
@@ -785,24 +789,24 @@ export default function SalesLedger({ products, customers, fetchProducts, fetchC
           </div>
 
           <div>
-            <label className="text-[10px] text-gray-400 font-bold block mb-1">Cash Amount Paid (CFA)</label>
-            <input type="number" placeholder={cartTotal > 0 ? `Total: CFA ${cartTotal}` : "Amount received"} value={ledgerForm.initialPaid} onChange={e => setLedgerForm({...ledgerForm, initialPaid: e.target.value})} className="w-full border p-2.5 text-xs rounded-lg font-bold text-green-700" />
+            <label className="text-[10px] text-gray-400 font-bold block mb-1">Cash Amount Paid (#)</label>
+            <input type="number" placeholder={cartTotal > 0 ? `Total: #${cartTotal}` : "Amount received"} value={ledgerForm.initialPaid} onChange={e => setLedgerForm({...ledgerForm, initialPaid: e.target.value})} className="w-full border p-2.5 text-xs rounded-lg font-bold text-green-700" />
           </div>
 
           {cartItems.length > 0 && (
             <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg text-xs space-y-1">
               <div className="flex justify-between text-gray-600">
                 <span>Total Cumulative:</span>
-                <span className="font-bold">CFA {cartTotal.toLocaleString()}</span>
+                <span className="font-bold">#{cartTotal.toLocaleString()}</span>
               </div>
               <div className="flex justify-between text-gray-600">
                 <span>Amount Received:</span>
-                <span className="font-bold text-green-600">CFA {paidAmount.toLocaleString()}</span>
+                <span className="font-bold text-green-600">#{paidAmount.toLocaleString()}</span>
               </div>
               {remainingDebt > 0 && (
                 <div className="flex justify-between border-t border-orange-200 pt-1 text-red-600 font-extrabold">
                   <span>Balance Due (Debt):</span>
-                  <span>CFA {remainingDebt.toLocaleString()}</span>
+                  <span>#{remainingDebt.toLocaleString()}</span>
                 </div>
               )}
             </div>
@@ -828,7 +832,7 @@ export default function SalesLedger({ products, customers, fetchProducts, fetchC
             {Object.keys(todayStats).length > 0 ? Object.entries(todayStats).map(([name, data]) => (
               <div key={name} className="p-3 border rounded-xl bg-orange-50/50 border-orange-100 text-center">
                 <p className="text-[10px] text-gray-500 font-bold uppercase">{name}</p>
-                <p className="text-base font-black text-gray-800">CFA {data.total.toLocaleString()}</p>
+                <p className="text-base font-black text-gray-800">#{data.total.toLocaleString()}</p>
                 <p className="text-[10px] text-gray-400">{data.count} transaction(s)</p>
               </div>
             )) : (
@@ -878,8 +882,8 @@ export default function SalesLedger({ products, customers, fetchProducts, fetchC
 
                       <div className="flex items-center space-x-3">
                         <div className="text-right">
-                          <span className="text-xs font-bold text-gray-700 block">CFA {group.totalSales.toLocaleString()}</span>
-                          <span className="text-[9px] text-green-600 font-bold block">Collected: CFA {group.totalPaid.toLocaleString()}</span>
+                          <span className="text-xs font-bold text-gray-700 block">#{group.totalSales.toLocaleString()}</span>
+                          <span className="text-[9px] text-green-600 font-bold block">Collected: #{group.totalPaid.toLocaleString()}</span>
                         </div>
                         {isOpen ? <ChevronDown className="w-4 h-4 text-gray-500" /> : <ChevronRight className="w-4 h-4 text-gray-400" />}
                       </div>
@@ -913,7 +917,7 @@ export default function SalesLedger({ products, customers, fetchProducts, fetchC
                                       )}
                                       <div className="flex-1 min-w-0">
                                         <div className="text-[11px] font-bold text-gray-800 truncate">{item.qty}x {item.name}</div>
-                                        <div className="text-[10px] text-gray-500">Batch: {item.batch} • @ CFA {item.price?.toLocaleString()}</div>
+                                        <div className="text-[10px] text-gray-500">Batch: {item.batch} • @ #{item.price?.toLocaleString()}</div>
                                       </div>
                                     </div>
                                   ))}
@@ -934,8 +938,8 @@ export default function SalesLedger({ products, customers, fetchProducts, fetchC
                               </button>
                               
                               <div className="flex items-center space-x-3">
-                                <span>Invoice: <strong>CFA {sale.total?.toLocaleString()}</strong></span>
-                                <span className="text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded">Paid: CFA {sale.paid?.toLocaleString()}</span>
+                                <span>Invoice: <strong>#{sale.total?.toLocaleString()}</strong></span>
+                                <span className="text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded">Paid: #{sale.paid?.toLocaleString()}</span>
                                 
                                 {currentUser?.role === 'admin' && (
                                   <div className="flex items-center space-x-1 pl-2 border-l border-gray-300">
@@ -966,7 +970,7 @@ export default function SalesLedger({ products, customers, fetchProducts, fetchC
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-gray-100 space-y-6 max-h-[95vh] overflow-y-auto">
             
-            {/* INVOICE PREVIEW CONTAINER - PERFECT COPY OF Provided DESIGN */}
+            {/* INVOICE PREVIEW CONTAINER */}
             <div id="printable-invoice-modal" className="bg-white p-6 rounded-2xl border-2 border-gray-200 space-y-6 text-[#202737]">
               
               {/* Header */}
@@ -977,7 +981,6 @@ export default function SalesLedger({ products, customers, fetchProducts, fetchC
                   <p className="text-[11px] font-semibold leading-tight text-gray-600">WhatsApp: +2349032690028</p>
                 </div>
                 <div className="text-right flex flex-col items-end">
-                  {/* "CG" LOGO BLOCK */}
                   <div className="w-12 h-12 flex items-center justify-center bg-[#202737] rounded-xl text-white font-black text-xl mb-3">
                     CG
                   </div>
@@ -1007,8 +1010,8 @@ export default function SalesLedger({ products, customers, fetchProducts, fetchC
                       <th className="py-2.5 px-2">S/N</th>
                       <th className="py-2.5 px-2">Item Description</th>
                       <th className="py-2.5 px-2 text-center">Qty</th>
-                      <th className="py-2.5 px-2 text-right">Price (CFA)</th>
-                      <th className="py-2.5 px-2 text-right">Amount (CFA)</th>
+                      <th className="py-2.5 px-2 text-right">Price (#)</th>
+                      <th className="py-2.5 px-2 text-right">Amount (#)</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -1020,8 +1023,8 @@ export default function SalesLedger({ products, customers, fetchProducts, fetchC
                             {item.name} {item.batch && item.batch !== 'N/A' && <span className="text-[10px] text-orange-600 block">Batch: {item.batch}</span>}
                           </td>
                           <td className="py-2.5 px-2 text-center font-bold text-lg">{item.qty}</td>
-                          <td className="py-2.5 px-2 text-right">CFA {item.price?.toLocaleString()}</td>
-                          <td className="py-2.5 px-2 text-right font-bold text-lg">CFA {(item.price * item.qty).toLocaleString()}</td>
+                          <td className="py-2.5 px-2 text-right">#{item.price?.toLocaleString()}</td>
+                          <td className="py-2.5 px-2 text-right font-bold text-lg">#{(item.price * item.qty).toLocaleString()}</td>
                         </tr>
                       ))
                     ) : (
@@ -1038,15 +1041,15 @@ export default function SalesLedger({ products, customers, fetchProducts, fetchC
                 <div className="w-64 space-y-1.5">
                   <div className="flex justify-between text-gray-700 font-semibold">
                     <span>Total Amount:</span>
-                    <span className="font-bold text-lg">CFA {(activeInvoiceSale.total || 0).toLocaleString()}</span>
+                    <span className="font-bold text-lg">#{(activeInvoiceSale.total || 0).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-[#148359] font-semibold">
                     <span>Amount Paid:</span>
-                    <span className="font-bold text-lg">CFA {(activeInvoiceSale.paid || 0).toLocaleString()}</span>
+                    <span className="font-bold text-lg">#{(activeInvoiceSale.paid || 0).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-[#ed3745] font-extrabold border-t border-gray-100 pt-1.5 text-xl">
                     <span>Balance Due:</span>
-                    <span>CFA {Math.max(0, (activeInvoiceSale.total || 0) - (activeInvoiceSale.paid || 0)).toLocaleString()}</span>
+                    <span>#{Math.max(0, (activeInvoiceSale.total || 0) - (activeInvoiceSale.paid || 0)).toLocaleString()}</span>
                   </div>
                 </div>
               </div>
